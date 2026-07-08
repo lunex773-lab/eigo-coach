@@ -152,6 +152,18 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .cmd{font-size:13.5px;padding:7px 0;border-bottom:1px solid #eef0ec;line-height:1.7}
 .cmd:last-of-type{border-bottom:0}
 .cmd b{color:var(--red-dark)}
+.transJa{text-align:left;font-size:13.5px;line-height:1.85;background:#f7f8f6;border-radius:8px;padding:10px 12px;margin:10px 0}
+.tlbl{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.08em;margin-top:12px}
+.selm{font-size:14px;color:#c9cdc6;flex:none;width:16px;text-align:center}
+.selm.on{color:var(--ok)}
+.row.sel{background:#f3f8f4}
+.tagdef{cursor:pointer}
+.tagdef small{color:var(--sub)}
+.tagdef.on{border-color:var(--ink);color:var(--ink);font-weight:700}
+.tagdef .x{border:0;background:none;color:var(--sub);font-size:14px;padding:0 1px}
+.tgl{border:1px solid var(--line);background:#fff;color:var(--sub)}
+.tgl.on{border-color:var(--navy);color:var(--navy);font-weight:700;background:#f2f6fb}
+.assignbar{background:#fff7e6;border:1px solid #ecd9a8;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px;line-height:1.7}
 
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 nav button{flex:1;padding:12px 0 10px;background:none;border:0;font-size:12.5px;color:var(--sub);font-weight:600;position:relative}
@@ -180,8 +192,8 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   <div class="card">
     <label class="lbl" for="askInput">英語の質問</label>
     <div class="seg" style="margin:8px 0 2px">
-      <button id="askModeStd" class="on">標準</button>
-      <button id="askModeDeep">精読（強化）</button>
+      <button id="askModeStd" class="on">単語・英熟語</button>
+      <button id="askModeDeep">英文解説</button>
     </div>
     <textarea id="askInput" rows="3" placeholder="例：on time と in time の違いは？"></textarea>
     <div class="btnrow">
@@ -203,7 +215,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     </div>
   </div>
   <div class="card">
-    <div class="lbl">質問履歴 <span id="histCount" class="num"></span></div>
+    <div class="lbl">質問履歴</div>
     <div id="histList" style="margin-top:6px"></div>
   </div>
 </section>
@@ -228,6 +240,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
       <div class="lbl">単語・熟語カード</div>
       <div id="cardFilters" class="chips" style="margin:10px 0 2px"></div>
       <p id="cardStatus" class="hint" style="margin:6px 0 2px"></p>
+      <p class="hint" style="margin:2px 0 2px">箱＝復習間隔レベル。正解すると箱が上がり出題間隔が延びる（0→1→3→7→16日後）、不正解で箱1に戻り当日再出題。</p>
       <button id="cardStart" class="btn">テストを始める</button>
     </div>
     <div id="cardArea"></div>
@@ -246,7 +259,19 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   </div>
   <div class="card">
     <div class="lbl">カード一覧</div>
-    <div id="itemFilter" class="chips" style="margin:8px 0"></div>
+    <p class="hint" style="margin:6px 0 0">箱＝復習間隔レベル（正解で上がる／不正解で箱1）。日付は次回復習日、<span style="color:var(--red);font-weight:700">赤</span>は今日が復習日。</p>
+    <div class="tlbl">タグ（単語グループ）</div>
+    <div id="tagDefList" class="chips" style="margin:6px 0 2px"></div>
+    <div class="tagrow" style="margin:6px 0 2px">
+      <input type="text" id="tagNewIn" placeholder="新しいタグ名（例: 苦手）" maxlength="12">
+      <button id="tagNewBtn" class="btn ghost" style="flex:0 0 76px">作成</button>
+    </div>
+    <div id="tagAssignBar" class="assignbar" hidden>
+      <span id="tagAssignMsg"></span>
+      <button id="tagAssignDone" class="btn" style="margin-top:8px">完了（タグ付けを終える）</button>
+    </div>
+    <div class="tlbl">種類で絞り込み</div>
+    <div id="itemFilter" class="chips" style="margin:6px 0"></div>
     <div id="itemList"></div>
   </div>
   <div class="card">
@@ -286,7 +311,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     </div>
   </div>
   <div class="card">
-    <div class="lbl">精読モードのコマンド</div>
+    <div class="lbl">英文解説モードのコマンド</div>
     <button id="cmdToggle" class="btn ghost">コマンド説明を見る</button>
     <div id="cmdBox" hidden>
       <div class="cmd"><b>/速</b> … 文構造・文法・和訳・熟語だけ手短に</div>
@@ -294,7 +319,7 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
       <div class="cmd"><b>/作文</b> … 本文の構文・表現を英作文テンプレとして再整理</div>
       <div class="cmd"><b>/類題</b> … 同じ文法・構文の新しい例文＋設問を作成（解答付き）</div>
       <div class="cmd"><b>/訳</b> … 英文＋自分の和訳を送ると10点満点で添削。訳が無い場合は構造ヒントのみ</div>
-      <p class="hint" style="margin-top:8px">使い方：精読モードに切り替え、英文の前後どこかにコマンドを添えて送信。コマンド無しなら①〜⑩のフル解説になります。</p>
+      <p class="hint" style="margin-top:8px">使い方：英文解説モードに切り替え、英文の前後どこかにコマンドを添えて送信。コマンド無しなら①〜⑩のフル解説になります。</p>
     </div>
   </div>
   <div class="card">
@@ -357,8 +382,20 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std'},items:[],buckets:{},tests:[],asks:[],askTotal:0,usage:{in:0,out:0,calls:0}}}
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.v===1){const s=Object.assign(fresh(),d);if(!s.settings.askMode)s.settings.askMode='std';if(typeof s.askTotal!=='number')s.askTotal=s.asks.length;s.items.forEach(function(it){if(typeof it.pos!=='string')it.pos='';if(!Array.isArray(it.tags))it.tags=[]});return s}}catch(e){}return fresh()}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std'},items:[],buckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},tagDefs:[],usage:{in:0,out:0,calls:0}}}
+function migrate(s){
+  if(!s.settings.askMode)s.settings.askMode='std';
+  if(typeof s.askTotal!=='number')s.askTotal=s.asks.length;
+  if(!s.cardStats||typeof s.cardStats.a!=='number')s.cardStats={a:0,c:0};
+  if(!Array.isArray(s.tagDefs))s.tagDefs=[];
+  s.items.forEach(function(it){
+    if(typeof it.pos!=='string')it.pos='';
+    if(!Array.isArray(it.tags))it.tags=[];
+    it.tags.forEach(function(tg){if(s.tagDefs.indexOf(tg)<0)s.tagDefs.push(tg)});
+  });
+  return s;
+}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.v===1){return migrate(Object.assign(fresh(),d))}}catch(e){}return fresh()}
 let S=load();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('保存できません（プレビュー環境では動きません。GitHub Pagesで開いてください）')}}
 
@@ -426,18 +463,36 @@ function switchTab(id){
 document.querySelectorAll('#nav button').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab)})});
 
 /* ================= 質問 ================= */
-const SYS_EXPLAIN=[
-'あなたは日本の高校生に英語を教えるプロ教師。生徒は大学入学共通テストの対策中。',
-'生徒の質問に、正確で分かりやすい日本語の解説を返す。例文は英文と和訳をセットで。',
-'同時に、学習カード化すべき要素を抽出する。',
-'必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
+const SYS_VOCAB=[
+'あなたは語源・語構成の指導に長けた、難関大学受験（東大・京大・阪大・神戸大・一橋・早慶上智など）英語のプロ講師。',
+'生徒は難関大志望の独学者。送られた単語・熟語を「丸暗記」ではなく「意味の成り立ち」から理解させることを最優先する。',
+'解説の原則:',
+'【単語】接頭辞・語根・接尾辞に分解し、各パーツの意味→コアイメージ→実際の意味、の順で導く。',
+'例: perceive = per-(完全に)+ceive(取る)=「完全に掴む」→〜を知覚する',
+'- 同じ語根を持つ入試重要語を2〜4個セットで示し、芋づる式に覚えさせる（例: ceive仲間 → receive / conceive / deceive）。',
+'- 多義語は、コアイメージから各意味への派生を1本の流れで説明する。',
+'- 語源が不確か、または分解が記憶の助けにならない語は、誤った語源をでっち上げず、コアイメージ・連想・対比など別の記憶フックを示す。',
+'- 品詞・語法（自動詞/他動詞、可算/不可算、相性の良い前置詞）、重要な派生語、アクセント位置（発音問題で狙われる語のみ）にも触れる。',
+'- 例文は英文＋和訳をセットで1つ。',
+'【熟語・句動詞】動詞のコアイメージ＋前置詞/副詞のコアイメージから、「なぜその意味になるか」を導く。',
+'例: put off = put(置く)+off(切り離して)=「予定を切り離して先に置く」→〜を延期する',
+'- 前置詞/副詞のコアイメージ（off=分離、over=覆う・越える、through=貫通、up=完了・上昇 など）を明示し、他の熟語にも転用できる形で教える。',
+'- 同じ前置詞/副詞を使う関連熟語、または同じ意味の言い換え表現を2〜3個セットで示し、使い分けを一言添える。',
+'出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
 '{"explanation":"解説（改行可、重要語は**で囲んでよい）","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
-'type: vocab(単語) / idiom(熟語・句動詞) / grammar(文法事項) / reading(読解の考え方)',
-'pos: 品詞。名詞/動詞/形容詞/副詞/前置詞/接続詞/その他 のいずれか（vocabのみ。それ以外は空文字）。',
-'同じ単語でも品詞が違う意味は別itemに分ける（例: swallow → 動詞「飲み込む」と名詞「ツバメ」の2枚）。同じ品詞の複数の意味は1枚のbackにまとめる。',
-'front: 単語・熟語は英語表記。文法・読解は日本語の項目名（例:「仮定法過去」）。',
-'back: 意味・要点を日本語で簡潔に。note: 30字以内の補足（不要なら空文字）。',
-'itemsは本当に価値があるものだけ0〜8個。'
+'- explanation: 上の原則に従った解説本文。',
+'- items: 学習カード。解説した単語・熟語本体に加え、セットで示した同語根語・関連熟語も入試価値が高ければカード化する。',
+'- type: vocab(単語) / idiom(熟語・句動詞)',
+'- pos: 品詞。名詞/動詞/形容詞/副詞/前置詞/接続詞/その他 のいずれか（vocabのみ。idiomは空文字）。',
+'- 同じ単語でも品詞が違う意味は別itemに分ける。同じ品詞の複数の意味は1枚のbackにまとめる。',
+'- front: 英語表記。back: 日本語の意味を簡潔に。',
+'- note: 30字以内で語源分解・成り立ちを書く（例:「per完全に+ceive取る=掴む」「put置く+off分離→延期」）。',
+'- itemsは価値があるものだけ0〜10個。',
+'入力の扱い:',
+'- 単語・熟語が1つまたは複数送られたら、それぞれ上の形式で解説する。',
+'- 英文が送られたら、入試レベルの単語・熟語を抽出して同様に解説する。',
+'- 「◯◯の仲間」「語根◯◯」「前置詞◯◯」のような指示が来たら、その語根・前置詞ファミリーをまとめて解説する。',
+'- 単語・熟語以外の質問（文法・語法など）が来た場合も、同じJSON形式のexplanationで簡潔に答える（itemsは価値があるもののみ）。'
 ].join('\n');
 
 const SYS_DEEP=[
@@ -525,7 +580,7 @@ async function doAsk(){
         save();
       }catch(e2){toast('カード抽出に失敗（解説は表示済み）')}
     }else{
-      const content=await api([{role:'system',content:SYS_EXPLAIN},{role:'user',content:q}],{json:true,maxTokens:900,temperature:0.3});
+      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:1200,temperature:0.3});
       const obj=parseModelJSON(content);
       $('askOut').hidden=false;
       $('askExp').innerHTML=nl2html(obj.explanation||'（解説なし）');
@@ -555,7 +610,6 @@ function renderAskItems(list){
 let histAll=false;
 function renderHist(){
   const n=S.asks.length;
-  $('histCount').textContent=n?('（累計 '+(S.askTotal||n)+'件）'):'';
   if(!n){$('histList').innerHTML='<p class="hint">まだ質問がありません。</p>';return}
   const all=S.asks.slice(-50).reverse();
   const list=histAll?all:all.slice(0,5);
@@ -563,7 +617,7 @@ function renderHist(){
     const idx=S.asks.indexOf(h);
     return '<div class="hrow" data-idx="'+idx+'">'
       +'<div class="hhead"><span class="hdate num">'+esc(String(h.d||'').slice(5))+'</span>'
-      +'<span class="hmode">'+(h.mode==='deep'?'精読':'標準')+'</span>'
+      +'<span class="hmode">'+(h.mode==='deep'?'英文':'単語')+'</span>'
       +'<span class="hq">'+esc(h.q||'')+'</span><button class="x" aria-label="削除">×</button></div>'
       +'<div class="hbody" hidden><div class="hqfull">'+esc(h.q||'')+'</div><div class="exp">'+(h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')+'</div></div>'
       +'</div>';
@@ -590,10 +644,10 @@ function setAskMode(deep){
   S.settings.askMode=deep?'deep':'std';
   $('askModeStd').classList.toggle('on',!deep);
   $('askModeDeep').classList.toggle('on',deep);
-  $('askInput').placeholder=deep?'英文を貼り付け（1文〜段落）。コマンド: /速 /深 /作文 /類題 /訳':'例：on time と in time の違いは？';
+  $('askInput').placeholder=deep?'英文を貼り付け（1文〜段落）。コマンド: /速 /深 /作文 /類題 /訳':'例：perceive ／ put off ／ ceiveの仲間';
   $('askModeHint').textContent=deep
-    ?'精読モード：文構造(SVOC)・文法根拠・和訳・パラフレーズまで①〜⑩で徹底解説。「/訳＋自分の和訳」で添削。カード化も自動。'
-    :'解説と同時に、単語・熟語・文法をカード化して自動保存します。';
+    ?'英文解説モード：文構造(SVOC)・文法根拠・和訳・パラフレーズまで①〜⑩で徹底解説。「/訳＋自分の和訳」で添削。カード化も自動。'
+    :'単語・熟語を語源・成り立ちから解説し、同語根の仲間もまとめてカード化します。文法などの質問にも答えます。';
   save();
 }
 $('askBtn').addEventListener('click',doAsk);
@@ -609,7 +663,7 @@ const SYS_READING=[
 '- 設問は3問・各4択・英語。正解は本文から一意に決まること。選択肢は紛らわしいが公平に。',
 '- 各設問に日本語の解説を付ける。',
 '必ず次のJSONのみを出力:',
-'{"title":"英語タイトル","passage":"英文本文","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説","relatedItemFronts":["設問に関係する弱点語句"]}],"usedItemFronts":["本文に織り込んだ弱点語句"],"pointJa":"この分野の解き方のコツを日本語で1文"}',
+'{"title":"英語タイトル","passage":"英文本文","translationJa":"本文全体の自然な日本語訳","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説","relatedItemFronts":["設問に関係する弱点語句"]}],"usedItemFronts":["本文に織り込んだ弱点語句"],"pointJa":"この分野の解き方のコツを日本語で1文"}',
 'answerは0〜3のインデックス。弱点リストが空ならusedItemFrontsは[]。'
 ].join('\n');
 
@@ -658,7 +712,7 @@ async function genReading(){
       '難易度':diffLabel(),
       '弱点リスト':weak.map(function(x){return {front:x.front,back:x.back}})
     });
-    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:1300,temperature:0.7});
+    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:1700,temperature:0.7});
     const q=parseModelJSON(content);
     if(!q.passage||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
     currentQuiz={data:q,bucket:bucket,graded:false};
@@ -706,6 +760,7 @@ function gradeQuiz(){
   let score=0;
   const byFront=new Map(S.items.map(function(it){return [it.front.toLowerCase(),it]}));
   const changes=[];
+  const rel=new Map();
   data.questions.forEach(function(qq,i){
     const ok=answers[i]===qq.answer;
     if(ok)score++;
@@ -721,9 +776,15 @@ function gradeQuiz(){
     ex.innerHTML=(ok?'<b class="okt">正解</b> ':'<b class="ngt">不正解</b> ')+nl2html(qq.explanation||'');
     (qq.relatedItemFronts||[]).forEach(function(f){
       const it=byFront.get(String(f).toLowerCase().trim());
-      if(it){gradeItem(it,ok);changes.push({front:it.front,box:it.box})}
+      if(it){
+        const r=rel.get(it.id)||{it:it,allOk:true};
+        if(!ok)r.allOk=false;
+        rel.set(it.id,r);
+      }
     });
   });
+  // 弱点カードの更新は1テストにつき1回だけ（関連設問がすべて正解なら○）
+  rel.forEach(function(r){gradeItem(r.it,r.allOk);changes.push({front:r.it.front,box:r.it.box})});
   const st=S.buckets[bucket.id]||{a:0,c:0,last:''};
   st.a+=data.questions.length;st.c+=score;st.last=todayStr();
   S.buckets[bucket.id]=st;
@@ -739,6 +800,7 @@ function gradeQuiz(){
   ph=ph.replace(/\u0001/g,'<mark>').replace(/\u0002/g,'</mark>');
   $('passageBox').innerHTML=ph;
   let rh='<div class="card result"><div class="score num">'+score+' / '+data.questions.length+'</div>';
+  if(data.translationJa)rh+='<div class="transJa"><div class="lbl" style="margin-bottom:4px">全文和訳</div>'+nl2html(data.translationJa)+'</div>';
   if(data.pointJa)rh+='<p class="hint">コツ：'+esc(data.pointJa)+'</p>';
   if(fronts.length)rh+='<p class="hint">本文に織り込んだ弱点：'+fronts.map(function(f){return '<mark>'+esc(f)+'</mark>'}).join(' ')+'</p>';
   if(changes.length)rh+='<p class="hint">復習箱の更新：'+changes.map(function(c){return esc(c.front)+'→箱'+c.box}).join('、')+'</p>';
@@ -839,7 +901,8 @@ function renderCard(){
 function answerCard(ok){
   const it=session.cards[session.i];
   gradeItem(it,ok);
-  if(ok){session.ok++}else{session.ng++}
+  S.cardStats.a++;
+  if(ok){S.cardStats.c++;session.ok++}else{session.ng++}
   save();
   session.i++;
   renderCard();
@@ -861,20 +924,57 @@ $('modeCards').addEventListener('click',function(){setMode(false)});
 let filt='all';
 let recListAll=false;
 let recOpenId=null;
+let assignTag=null;
 function stat(l,v,s){return '<div class="stat"><div class="sl">'+l+'</div><div class="sv num">'+v+'</div><div class="ss">'+s+'</div></div>'}
+function renderTagDefs(){
+  const wrap=$('tagDefList');
+  if(!S.tagDefs.length){
+    wrap.innerHTML='<span class="hint">タグはまだありません。作成して単語をグループ化できます。</span>';
+  }else{
+    wrap.innerHTML='';
+    S.tagDefs.forEach(function(tg){
+      const n=S.items.filter(function(i){return (i.tags||[]).indexOf(tg)>=0}).length;
+      const c=document.createElement('span');
+      c.className='chip tagdef'+(assignTag===tg?' on':'');
+      c.innerHTML='#'+esc(tg)+'<small class="num">（'+n+'）</small><button class="x" aria-label="タグ削除">×</button>';
+      c.addEventListener('click',function(e){
+        if(e.target.classList.contains('x'))return;
+        assignTag=(assignTag===tg)?null:tg;
+        if(assignTag){recListAll=true;recOpenId=null}
+        renderRec();
+      });
+      c.querySelector('.x').addEventListener('click',async function(e){
+        e.stopPropagation();
+        const yes=await confirmBox('タグ「#'+tg+'」を削除します。全カードからこのタグが外れます。よろしいですか？');
+        if(!yes)return;
+        S.tagDefs=S.tagDefs.filter(function(x){return x!==tg});
+        S.items.forEach(function(i){i.tags=(i.tags||[]).filter(function(x){return x!==tg})});
+        if(assignTag===tg)assignTag=null;
+        save();renderRec();renderCardStatus();
+      });
+      wrap.appendChild(c);
+    });
+  }
+  const bar=$('tagAssignBar');
+  if(assignTag){
+    bar.hidden=false;
+    $('tagAssignMsg').innerHTML='<b>#'+esc(assignTag)+'</b> に入れる単語を下の一覧でタップ（●＝入っている。もう一度タップで外す）';
+  }else{
+    bar.hidden=true;
+  }
+}
 function renderRec(){
   const items=S.items;
   function by(t){return items.filter(function(i){return i.type===t}).length}
   const rt=S.tests.filter(function(t){return t.mode==='reading'});
   const ra=rt.reduce(function(s,t){return s+t.total},0);
   const rc=rt.reduce(function(s,t){return s+t.score},0);
-  const va=items.reduce(function(s,i){return s+i.stats.a},0);
-  const vc=items.reduce(function(s,i){return s+i.stats.c},0);
+  const cs=S.cardStats||{a:0,c:0};
   $('recStats').innerHTML=
     stat('カード',items.length+'枚','単語'+by('vocab')+'・熟語'+by('idiom')+'・文法'+by('grammar')+'・読解'+by('reading'))
     +stat('読解テスト',rt.length+'回',ra?('正答率 '+Math.round(rc/ra*100)+'%'):'—')
     +stat('質問数',(S.askTotal||S.asks.length)+'件','累計')
-    +stat('カード正答率',va?(Math.round(vc/va*100)+'%'):'—','累計 '+va+'回');
+    +stat('単語テスト正答率',cs.a?(Math.round(cs.c/cs.a*100)+'%'):'—','累計 '+cs.a+'回・読解は含まず');
   let ch='';
   BUCKETS.forEach(function(b){
     const st=S.buckets[b.id];
@@ -887,6 +987,7 @@ function renderRec(){
     ch+='<div class="cov"><span class="dot '+dot+'"></span><span class="covn num">'+pad(b.id)+'</span><span class="covname">'+esc(b.name)+'</span><span class="covr num">'+right+'</span></div>';
   });
   $('covList').innerHTML=ch;
+  renderTagDefs();
   const fw=$('itemFilter');fw.innerHTML='';
   [['all','すべて'],['vocab','単語'],['idiom','熟語'],['grammar','文法'],['reading','読解']].forEach(function(p){
     const b=document.createElement('button');
@@ -900,19 +1001,28 @@ function renderRec(){
   const shown=recListAll?list:list.slice(0,5);
   let lh=shown.map(function(i){
     const posb=i.pos?'<small class="posb">'+esc(i.pos)+'</small>':'';
-    const open=recOpenId===i.id;
+    const inTag=assignTag?((i.tags||[]).indexOf(assignTag)>=0):false;
+    const selm=assignTag?('<span class="selm'+(inTag?' on':'')+'">'+(inTag?'●':'○')+'</span>'):'';
+    const open=!assignTag&&recOpenId===i.id;
     let ed='';
     if(open){
-      const tags=(i.tags&&i.tags.length)?('<div class="rtags">'+i.tags.map(function(tg){return '<span class="tagc">#'+esc(tg)+'<button class="tx" data-tag="'+esc(tg)+'">×</button></span>'}).join('')+'</div>'):'<div class="hint" style="margin-bottom:6px">タグはまだありません。</div>';
+      let tchips;
+      if(S.tagDefs.length){
+        tchips='<div class="rtags">'+S.tagDefs.map(function(tg){
+          const on=(i.tags||[]).indexOf(tg)>=0;
+          return '<button class="tagc tgl'+(on?' on':'')+'" data-tag="'+esc(tg)+'">#'+esc(tg)+'</button>';
+        }).join('')+'</div><div class="hint">タップでこのカードをタグに出し入れ。</div>';
+      }else{
+        tchips='<div class="hint">タグがまだありません。上の「タグ」欄で作成してください。</div>';
+      }
       ed='<div class="redit">'
         +(i.note?'<div class="hint" style="margin-bottom:6px">'+esc(i.note)+'</div>':'')
-        +tags
-        +'<div class="tagrow"><input type="text" class="tagIn" placeholder="タグ名（例: 医療系）" maxlength="12"><button class="btn ghost tagAdd" style="flex:0 0 76px">追加</button></div>'
+        +tchips
         +'</div>';
     }
-    return '<div class="row'+(open?' open':'')+'" data-id="'+i.id+'"><span class="badge b-'+i.type+'">'+TYPES[i.type]+'</span>'
+    return '<div class="row'+(open?' open':'')+(inTag?' sel':'')+'" data-id="'+i.id+'">'+selm+'<span class="badge b-'+i.type+'">'+TYPES[i.type]+'</span>'
       +'<span class="rmain"><b>'+esc(i.front)+posb+'</b><small>'+esc(i.back)+'</small></span>'
-      +'<span class="boxb">箱'+i.box+'</span><span class="rdue num'+(i.due<=t?' duev':'')+'">'+String(i.due).slice(5)+'</span>'
+      +'<span class="boxb">箱'+i.box+'</span><span class="rdue num'+(i.due<=t?' duev':'')+'">次 '+String(i.due).slice(5)+'</span>'
       +'<button class="x" aria-label="削除">×</button></div>'+ed;
   }).join('');
   if(!list.length)lh='<p class="hint">カードはまだありません。</p>';
@@ -928,6 +1038,15 @@ function renderRec(){
     r.addEventListener('click',function(e){
       if(e.target.classList.contains('x'))return;
       const id=r.dataset.id;
+      if(assignTag){
+        const it=S.items.find(function(i){return i.id===id});
+        if(!it)return;
+        it.tags=it.tags||[];
+        const k=it.tags.indexOf(assignTag);
+        if(k>=0){it.tags.splice(k,1)}else{it.tags.push(assignTag)}
+        save();renderRec();renderCardStatus();
+        return;
+      }
       recOpenId=(recOpenId===id)?null:id;
       renderRec();
     });
@@ -945,28 +1064,33 @@ function renderRec(){
   if(ed){
     const it=S.items.find(function(i){return i.id===recOpenId});
     if(it){
-      ed.querySelectorAll('.tx').forEach(function(tx){
-        tx.addEventListener('click',function(){
-          const tg=tx.dataset.tag;
-          it.tags=(it.tags||[]).filter(function(x){return x!==tg});
+      ed.querySelectorAll('.tgl').forEach(function(tb){
+        tb.addEventListener('click',function(e){
+          e.stopPropagation();
+          const tg=tb.dataset.tag;
+          it.tags=it.tags||[];
+          const k=it.tags.indexOf(tg);
+          if(k>=0){it.tags.splice(k,1)}else{it.tags.push(tg)}
           save();renderRec();renderCardStatus();
         });
-      });
-      ed.querySelector('.tagAdd').addEventListener('click',function(){
-        const inp=ed.querySelector('.tagIn');
-        const v=(inp.value||'').trim().replace(/^#/,'');
-        if(!v)return;
-        it.tags=it.tags||[];
-        if(it.tags.indexOf(v)>=0){toast('同じタグがあります');return}
-        if(it.tags.length>=5){toast('タグは1枚につき5個まで');return}
-        it.tags.push(v);
-        save();renderRec();renderCardStatus();
       });
     }
   }
   const cost=(S.usage.in*PRICE.inPerM+S.usage.out*PRICE.outPerM)/1e6;
   $('usageBox').innerHTML='<div class="hint num">呼び出し '+S.usage.calls+'回／入力 '+S.usage.in.toLocaleString()+' tok／出力 '+S.usage.out.toLocaleString()+' tok<br>概算 $'+cost.toFixed(4)+'（約 ¥'+Math.ceil(cost*PRICE.yen)+'）</div>';
 }
+
+$('tagNewBtn').addEventListener('click',function(){
+  const v=($('tagNewIn').value||'').trim().replace(/^#/,'');
+  if(!v){toast('タグ名を入力してください');return}
+  if(v.length>12){toast('タグ名は12文字まで');return}
+  if(S.tagDefs.indexOf(v)>=0){toast('同じタグがあります');return}
+  if(S.tagDefs.length>=20){toast('タグは20個まで');return}
+  S.tagDefs.push(v);
+  $('tagNewIn').value='';
+  save();renderRec();
+});
+$('tagAssignDone').addEventListener('click',function(){assignTag=null;renderRec()});
 
 /* バックアップ */
 $('expBtn').addEventListener('click',async function(){
@@ -991,7 +1115,7 @@ $('impApply').addEventListener('click',async function(){
   if(!obj||obj.app!=='eigo-coach'||!obj.data){toast('このアプリのバックアップではありません');return}
   const yes=await confirmBox('現在のデータを消して、貼り付けた内容で復元します。よろしいですか？');
   if(!yes)return;
-  S=Object.assign(fresh(),obj.data);
+  S=migrate(Object.assign(fresh(),obj.data));
   save();renderRec();renderCardStatus();toast('復元しました');
 });
 
