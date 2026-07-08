@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="英語コーチ">
@@ -16,7 +16,7 @@
   --teal:#0f766e; --purple:#6d28d9;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;touch-action:pan-x pan-y}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
   background:var(--paper);color:var(--ink);font-size:15px;line-height:1.65;
@@ -49,7 +49,7 @@ main{max-width:640px;margin:0 auto;padding:8px 14px 0}
 .btnrow{display:flex;gap:10px}
 .btnrow .btn{flex:1}
 
-textarea,input[type=text]{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;background:#fff;font-family:inherit;margin-top:6px;color:var(--ink)}
+textarea,input[type=text]{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;background:#fff;font-family:inherit;margin-top:6px;color:var(--ink)}
 textarea:focus,input[type=text]:focus{outline:none;border-color:var(--navy)}
 
 .badge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:2px 7px;margin-right:6px;vertical-align:1px}
@@ -130,6 +130,16 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .duev{color:var(--red);font-weight:700}
 .row .x{border:0;background:none;color:var(--sub);font-size:16px;padding:0 3px}
 
+.hrow{border-bottom:1px solid #eef0ec}
+.hrow:last-child{border-bottom:0}
+.hhead{display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer}
+.hdate{font-size:11.5px;color:var(--sub);flex:none}
+.hmode{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--sub);flex:none;font-weight:700}
+.hq{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+.hrow .x{border:0;background:none;color:var(--sub);font-size:16px;padding:0 3px}
+.hbody{padding:0 0 12px}
+.hqfull{font-size:12.5px;color:var(--sub);white-space:pre-wrap;background:#f7f8f6;border-radius:8px;padding:8px 10px;margin-bottom:8px}
+
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 nav button{flex:1;padding:12px 0 10px;background:none;border:0;font-size:12.5px;color:var(--sub);font-weight:600;position:relative}
 nav button.on{color:var(--red)}
@@ -156,9 +166,16 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
 <section id="tab-ask" class="tab active">
   <div class="card">
     <label class="lbl" for="askInput">英語の質問</label>
+    <div class="seg" style="margin:8px 0 2px">
+      <button id="askModeStd" class="on">標準</button>
+      <button id="askModeDeep">精読（強化）</button>
+    </div>
     <textarea id="askInput" rows="3" placeholder="例：on time と in time の違いは？"></textarea>
-    <button id="askBtn" class="btn">質問する</button>
-    <div class="hint" style="margin-top:8px">解説と同時に、単語・熟語・文法をカード化して自動保存します。</div>
+    <div class="btnrow">
+      <button id="askClear" class="btn ghost" style="flex:0 0 96px">クリア</button>
+      <button id="askBtn" class="btn">質問する</button>
+    </div>
+    <div class="hint" id="askModeHint" style="margin-top:8px"></div>
   </div>
   <div id="askErr" class="err" hidden></div>
   <div id="askOut" hidden>
@@ -171,6 +188,10 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
       <div id="askItems" class="chips" style="margin-top:8px"></div>
       <div class="hint" style="margin-top:8px">誤抽出は × で削除。単語カードと読解テストに反映されます。</div>
     </div>
+  </div>
+  <div class="card">
+    <div class="lbl">質問履歴 <span id="histCount" class="num"></span></div>
+    <div id="histList" style="margin-top:6px"></div>
   </div>
 </section>
 
@@ -306,8 +327,8 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:''},items:[],buckets:{},tests:[],asks:[],usage:{in:0,out:0,calls:0}}}
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.v===1){return Object.assign(fresh(),d)}}catch(e){}return fresh()}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std'},items:[],buckets:{},tests:[],asks:[],askTotal:0,usage:{in:0,out:0,calls:0}}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.v===1){const s=Object.assign(fresh(),d);if(!s.settings.askMode)s.settings.askMode='std';if(typeof s.askTotal!=='number')s.askTotal=s.asks.length;return s}}catch(e){}return fresh()}
 let S=load();
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('保存できません（プレビュー環境では動きません。GitHub Pagesで開いてください）')}}
 
@@ -380,32 +401,98 @@ const SYS_EXPLAIN=[
 'itemsは本当に価値があるものだけ0〜8個。'
 ].join('\n');
 
+const SYS_DEEP=[
+'あなたは難関大学（東大・京大・阪大・神戸大・一橋・早慶上智など）の英語入試に精通したプロの英語講師。',
+'生徒は難関大志望の独学者（高校英文法は一通り履修済み）。送られた英文を「なぜそう読めるのか」まで理解できるように精読解説する。',
+'単なる和訳の提示ではなく、二度と同じ構造でつまずかないための「読み方の型」を教えることを最優先する。',
+'原則:',
+'- 訳や解釈には必ず文法的な根拠を示す。「なんとなく」は禁止。',
+'- 覚えるべき知識には、他の英文にも使える一般化した法則を必ず添える。',
+'- 生徒が誤読しやすいポイントを先回りして警告する。',
+'- 解説は日本語。パラフレーズは英語で示す。',
+'- 出力はプレーンテキスト。見出しは①〜⑩、強調は**語句**のみ。Markdownの見出し記号(#)や表は使わない。',
+'入力が英文なら、次の順で解説する（入力の長さに応じて簡潔に。該当しない項目は省略してよい）:',
+'① 難易度 … ★☆☆〜★★★と、何が難しいかを一言',
+'② 文構造 … S/V/O/Cを明示。句・節が何を修飾するかを示し、入れ子構造は階層に分解して見せる',
+'③ 文法解説 … 使われている文法事項＋「なぜそう判断できるのか」の見分け方＋一般化した型',
+'④ 重要単語 … 入試レベル語の意味・品詞・語法・短い例文1つ（発音問題で狙われる語はアクセント位置も）',
+'⑤ 熟語 … 意味と成り立ち、関連表現との使い分け・言い換え',
+'⑥ 全文和訳 … 【直訳】と【自然訳】。減点されやすい箇所（多義語の訳し分け・指示内容・無生物主語・否定や比較の範囲）を指摘',
+'⑦ パラフレーズ … 核心部分をやさしい英語で言い換える',
+'⑧ 論理 … ディスコースマーカーや指示語のつながり、主張／具体例／譲歩→逆接の構造（複数文のときのみ）',
+'⑨ 背景知識 … テーマ理解を助ける前提知識（論説文のみ・簡潔に）',
+'⑩ 一言アドバイス … この英文から学ぶべき最重要ポイントを1〜2行',
+'全体は日本語2000字以内が目安。長い入力は特に重要な文に絞って深く扱う。',
+'コマンド（入力に含まれていたら指示を優先）:',
+'/速 → ②③⑥⑤のみ手短に',
+'/深 → 指定された構文・単語をとことん深掘り',
+'/作文 → 本文の構文・表現を英作文で使えるテンプレとして再整理',
+'/類題 → 同じ文法・構文の新しい例文と設問を作る（解答と解説は末尾に付ける）',
+'/訳 → 生徒の和訳が添えてあれば10点満点で添削・採点し減点理由を明示。訳が無ければ全訳は見せず、構造のヒントだけ示して「自分の訳を添えて再送信」を促す',
+'英文ではなく質問が送られた場合も、同じ厳密さ（文法的根拠＋一般化＋例文）で日本語で答える。'
+].join('\n');
+
+const SYS_EXTRACT=[
+'以下は英語学習者の入力（質問または英文）と、講師の解説。学習カード化すべき要素を抽出する。',
+'必ず次のJSONのみを出力:',
+'{"items":[{"type":"vocab","front":"...","back":"...","note":"..."}]}',
+'type: vocab(単語) / idiom(熟語・句動詞) / grammar(文法事項) / reading(読解の考え方)',
+'front: 単語・熟語は英語表記、文法・読解は日本語の項目名。back: 日本語で簡潔に。note: 30字以内（不要なら空文字）。',
+'価値があるものだけ0〜10個。'
+].join('\n');
+
+function addItems(arr,srcQ){
+  const added=[];
+  for(let i=0;i<arr.length;i++){
+    const raw=arr[i];
+    if(!raw||!raw.front||!raw.back)continue;
+    const front=String(raw.front).trim();
+    const back=String(raw.back).trim();
+    const type=TYPES[raw.type]?raw.type:'vocab';
+    if(S.items.some(function(it){return it.front.toLowerCase()===front.toLowerCase()}))continue;
+    const it={id:uid(),created:todayStr(),type:type,front:front,back:back,note:String(raw.note||'').trim(),src:srcQ.slice(0,60),box:1,due:todayStr(),stats:{a:0,c:0}};
+    S.items.push(it);added.push(it);
+  }
+  return added;
+}
+function pushHist(q,a,mode){
+  S.asks.push({d:todayStr(),q:q.slice(0,800),a:String(a||'').slice(0,6000),mode:mode});
+  if(S.asks.length>100)S.asks=S.asks.slice(-100);
+  S.askTotal=(S.askTotal||0)+1;
+}
+
 async function doAsk(){
   const q=$('askInput').value.trim();
   if(!q){toast('質問を入力してください');return}
-  const btn=$('askBtn');btn.disabled=true;btn.textContent='考え中…';
+  const deep=S.settings.askMode==='deep';
+  const btn=$('askBtn');btn.disabled=true;btn.textContent=deep?'精読中…（20秒ほど）':'考え中…';
   $('askErr').hidden=true;
   try{
-    const content=await api([{role:'system',content:SYS_EXPLAIN},{role:'user',content:q}],{json:true,maxTokens:900,temperature:0.3});
-    const obj=parseModelJSON(content);
-    $('askOut').hidden=false;
-    $('askExp').innerHTML=nl2html(obj.explanation||'（解説なし）');
-    const added=[];
-    const arr=Array.isArray(obj.items)?obj.items:[];
-    for(let i=0;i<arr.length;i++){
-      const raw=arr[i];
-      if(!raw||!raw.front||!raw.back)continue;
-      const front=String(raw.front).trim();
-      const back=String(raw.back).trim();
-      const type=TYPES[raw.type]?raw.type:'vocab';
-      if(S.items.some(function(it){return it.front.toLowerCase()===front.toLowerCase()}))continue;
-      const it={id:uid(),created:todayStr(),type:type,front:front,back:back,note:String(raw.note||'').trim(),src:q.slice(0,60),box:1,due:todayStr(),stats:{a:0,c:0}};
-      S.items.push(it);added.push(it);
+    let added=[];
+    if(deep){
+      // 精読モード: ①本文解説はプレーンテキスト（途中で切れても読める）②カード抽出は別呼び出し
+      const text=await api([{role:'system',content:SYS_DEEP},{role:'user',content:q}],{json:false,maxTokens:2000,temperature:0.3});
+      $('askOut').hidden=false;
+      $('askExp').innerHTML=nl2html(text);
+      pushHist(q,text,'deep');
+      save();
+      try{
+        const ex=await api([{role:'system',content:SYS_EXTRACT},{role:'user',content:'【入力】\n'+q.slice(0,1500)+'\n\n【解説】\n'+text.slice(0,4000)}],{json:true,maxTokens:600,temperature:0.2});
+        const obj=parseModelJSON(ex);
+        added=addItems(Array.isArray(obj.items)?obj.items:[],q);
+        save();
+      }catch(e2){toast('カード抽出に失敗（解説は表示済み）')}
+    }else{
+      const content=await api([{role:'system',content:SYS_EXPLAIN},{role:'user',content:q}],{json:true,maxTokens:900,temperature:0.3});
+      const obj=parseModelJSON(content);
+      $('askOut').hidden=false;
+      $('askExp').innerHTML=nl2html(obj.explanation||'（解説なし）');
+      added=addItems(Array.isArray(obj.items)?obj.items:[],q);
+      pushHist(q,obj.explanation,'std');
+      save();
     }
-    S.asks.push({d:todayStr(),q:q.slice(0,120)});
-    if(S.asks.length>200)S.asks=S.asks.slice(-200);
-    save();
     renderAskItems(added);
+    renderHist();
     renderCardStatus();
   }catch(e){$('askErr').textContent=e.message;$('askErr').hidden=false}
   finally{btn.disabled=false;btn.textContent='質問する'}
@@ -423,7 +510,45 @@ function renderAskItems(list){
     wrap.appendChild(c);
   });
 }
+function renderHist(){
+  const n=S.asks.length;
+  $('histCount').textContent=n?('（累計 '+(S.askTotal||n)+'件）'):'';
+  if(!n){$('histList').innerHTML='<p class="hint">まだ質問がありません。</p>';return}
+  const list=S.asks.slice(-50).reverse();
+  $('histList').innerHTML=list.map(function(h){
+    const idx=S.asks.indexOf(h);
+    return '<div class="hrow" data-idx="'+idx+'">'
+      +'<div class="hhead"><span class="hdate num">'+esc(String(h.d||'').slice(5))+'</span>'
+      +'<span class="hmode">'+(h.mode==='deep'?'精読':'標準')+'</span>'
+      +'<span class="hq">'+esc(h.q||'')+'</span><button class="x" aria-label="削除">×</button></div>'
+      +'<div class="hbody" hidden><div class="hqfull">'+esc(h.q||'')+'</div><div class="exp">'+(h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')+'</div></div>'
+      +'</div>';
+  }).join('');
+  document.querySelectorAll('#histList .hrow').forEach(function(r){
+    r.querySelector('.hhead').addEventListener('click',function(e){
+      if(e.target.classList.contains('x'))return;
+      const b=r.querySelector('.hbody');b.hidden=!b.hidden;
+    });
+    r.querySelector('.x').addEventListener('click',function(){
+      const idx=Number(r.dataset.idx);
+      S.asks.splice(idx,1);save();renderHist();
+    });
+  });
+}
+function setAskMode(deep){
+  S.settings.askMode=deep?'deep':'std';
+  $('askModeStd').classList.toggle('on',!deep);
+  $('askModeDeep').classList.toggle('on',deep);
+  $('askInput').placeholder=deep?'英文を貼り付け（1文〜段落）。コマンド: /速 /深 /作文 /類題 /訳':'例：on time と in time の違いは？';
+  $('askModeHint').textContent=deep
+    ?'精読モード：文構造(SVOC)・文法根拠・和訳・パラフレーズまで①〜⑩で徹底解説。「/訳＋自分の和訳」で添削。カード化も自動。'
+    :'解説と同時に、単語・熟語・文法をカード化して自動保存します。';
+  save();
+}
 $('askBtn').addEventListener('click',doAsk);
+$('askClear').addEventListener('click',function(){$('askInput').value='';$('askInput').focus()});
+$('askModeStd').addEventListener('click',function(){setAskMode(false)});
+$('askModeDeep').addEventListener('click',function(){setAskMode(true)});
 
 /* ================= 読解テスト ================= */
 const SYS_READING=[
@@ -655,7 +780,7 @@ function renderRec(){
   $('recStats').innerHTML=
     stat('カード',items.length+'枚','単語'+by('vocab')+'・熟語'+by('idiom')+'・文法'+by('grammar')+'・読解'+by('reading'))
     +stat('読解テスト',rt.length+'回',ra?('正答率 '+Math.round(rc/ra*100)+'%'):'—')
-    +stat('質問数',S.asks.length+'件','累計')
+    +stat('質問数',(S.askTotal||S.asks.length)+'件','累計')
     +stat('カード正答率',va?(Math.round(vc/va*100)+'%'):'—','累計 '+va+'回');
   let ch='';
   BUCKETS.forEach(function(b){
@@ -747,7 +872,10 @@ $('setReset').addEventListener('click',async function(){
 });
 
 /* ================= 起動 ================= */
+document.addEventListener('gesturestart',function(e){e.preventDefault()});
 loadSettings();
+setAskMode(S.settings.askMode==='deep');
+renderHist();
 renderCardStatus();
 renderRec();
 if(!S.settings.workerUrl){
