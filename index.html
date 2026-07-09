@@ -179,6 +179,9 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .shareimg{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--line)}
 .obrow{display:block;margin-bottom:10px;font-size:13.5px;line-height:1.7}
 .obrow b{display:block;color:var(--red-dark)}
+.ctimer{font-size:11px;font-weight:700;color:var(--sub);background:#eef0ec;border-radius:5px;padding:2px 7px}
+.ctimer.warn{background:var(--red);color:#fff}
+.spk{border:0;background:none;font-size:20px;padding:0 4px;vertical-align:4px;line-height:1}
 
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 nav button{flex:1;padding:12px 0 10px;background:none;border:0;font-size:12.5px;color:var(--sub);font-weight:600;position:relative}
@@ -329,6 +332,11 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
 <!-- ===== 設定 ===== -->
 <section id="tab-set" class="tab">
   <div class="card">
+    <div class="lbl">学習設定</div>
+    <div id="prefChips" class="chips" style="margin:10px 0 2px"></div>
+    <p class="hint" style="margin-top:8px">タイマー：単語テストで1枚あたり5秒。時間切れになると答えが自動で表示されます（自動で×にはなりません）。</p>
+  </div>
+  <div class="card">
     <div class="lbl">接続設定</div>
     <p class="hint" style="margin:6px 0 2px">通信に必要な設定。通常は触る必要はありません。</p>
     <button id="connToggle" class="btn ghost">接続設定を開く</button>
@@ -434,11 +442,14 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,onboarded:false},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,onboarded:false,sound:true,autoSpeak:true,timer:true},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
 function migrate(s){
   if(!s.settings.askMode)s.settings.askMode='std';
   if(typeof s.settings.rate!=='number')s.settings.rate=1;
   if(typeof s.settings.onboarded!=='boolean')s.settings.onboarded=(s.items.length>0||s.asks.length>0);
+  if(typeof s.settings.sound!=='boolean')s.settings.sound=true;
+  if(typeof s.settings.autoSpeak!=='boolean')s.settings.autoSpeak=true;
+  if(typeof s.settings.timer!=='boolean')s.settings.timer=true;
   if(typeof s.askTotal!=='number')s.askTotal=s.asks.length;
   if(!s.cardStats||typeof s.cardStats.a!=='number')s.cardStats={a:0,c:0};
   if(!s.listenStats||typeof s.listenStats.a!=='number')s.listenStats={a:0,c:0};
@@ -477,6 +488,38 @@ function touch(){
   Object.keys(S.days).forEach(function(d){if(d<keep)delete S.days[d]});
 }
 function last14(){const a=[];for(let i=13;i>=0;i--){const d=addDays(-i);a.push({d:d,n:S.days[d]||0})}return a}
+
+/* 効果音（Web Audio・音声ファイル不要） */
+let actx=null;
+function beep(kind){
+  if(!S.settings.sound)return;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!actx)actx=new AC();
+    if(actx.state==='suspended')actx.resume();
+    const now=actx.currentTime;
+    const plan=kind==='ok'?[[660,0,.07],[990,.07,.12]]
+      :kind==='ng'?[[200,0,.16]]
+      :kind==='done'?[[523,0,.09],[659,.09,.09],[784,.18,.16]]
+      :[[900,0,.035]];
+    plan.forEach(function(p){
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.type=(kind==='ng')?'sawtooth':'sine';
+      o.frequency.value=p[0];
+      const t0=now+p[1],t1=t0+p[2];
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(kind==='tap'?0.09:0.16,t0+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t1);
+      o.connect(g);g.connect(actx.destination);
+      o.start(t0);o.stop(t1+0.02);
+    });
+  }catch(e){}
+}
+document.addEventListener('click',function(e){
+  const b=e.target.closest('button');
+  if(b&&!b.hasAttribute('data-nosound')&&!b.disabled)beep('tap');
+},true);
 let toastT=null;
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2800)}
 function confirmBox(msg){return new Promise(function(res){
@@ -525,7 +568,7 @@ async function api(messages,opt){
 
 /* ================= タブ ================= */
 function switchTab(id){
-  stopSpeak();
+  stopSpeak();clearCardTimer();
   document.querySelectorAll('.tab').forEach(function(s){s.classList.toggle('active',s.id===id)});
   document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===id)});
   if(id==='tab-rec')renderRec();
@@ -813,7 +856,7 @@ function renderQuiz(){
     });
     h+='<div class="qexp" hidden></div></div>';
   });
-  h+='<button id="gradeBtn" class="btn">採点する</button><div id="quizResult"></div>';
+  h+='<button id="gradeBtn" class="btn" data-nosound>採点する</button><div id="quizResult"></div>';
   $('quiz').innerHTML=h;
   document.querySelectorAll('#quiz .choice').forEach(function(lb){
     lb.addEventListener('click',function(){
@@ -887,6 +930,7 @@ function gradeQuiz(){
   rh+='<button id="againBtn" class="btn ghost">もう1題つくる</button></div>';
   $('quizResult').innerHTML=rh;
   $('gradeBtn').hidden=true;
+  beep(score===data.questions.length?'done':(score?'ok':'ng'));
   $('againBtn').addEventListener('click',genReading);
   renderCardStatus();
 }
@@ -959,9 +1003,50 @@ function startCards(){
   session={cards:pick,i:0,ok:0,ng:0};
   renderCard();
 }
+let cardTimer=null,cardLeft=0;
+function clearCardTimer(){if(cardTimer){clearInterval(cardTimer);cardTimer=null}}
+function revealCard(){
+  const rs=$('rs');
+  if(!rs||rs.classList.contains('revealed'))return;
+  clearCardTimer();
+  rs.classList.add('revealed');
+  $('fBtns').hidden=false;
+}
+function startCardTimer(){
+  clearCardTimer();
+  const el=$('ctimer');
+  if(!el)return;
+  if(!S.settings.timer){el.hidden=true;return}
+  el.hidden=false;el.classList.remove('warn');
+  cardLeft=5;el.textContent='残り 5秒';
+  cardTimer=setInterval(function(){
+    cardLeft--;
+    if(cardLeft<=0){
+      clearCardTimer();
+      el.textContent='時間切れ';el.classList.add('warn');
+      beep('ng');revealCard();
+      return;
+    }
+    el.textContent='残り '+cardLeft+'秒';
+    if(cardLeft<=2)el.classList.add('warn');
+  },1000);
+}
+function speakWord(t){
+  if(!window.speechSynthesis)return;
+  stopSpeak();
+  try{
+    const u=new SpeechSynthesisUtterance(String(t||''));
+    const v=pickVoice(0);
+    if(v)u.voice=v;
+    u.lang='en-US';u.rate=0.9;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
 function renderCard(){
   const ar=$('cardArea');
+  clearCardTimer();stopSpeak();
   if(session.i>=session.cards.length){
+    beep('done');
     ar.innerHTML='<div class="card result"><div class="score num">○ '+session.ok+'　× '+session.ng+'</div><p class="hint">×のカードは箱1に戻り、今日中にまた出ます。</p><button id="cardAgain" class="btn ghost">続けて復習</button></div>';
     $('cardAgain').addEventListener('click',startCards);
     renderCardStatus();
@@ -969,16 +1054,21 @@ function renderCard(){
   }
   const it=session.cards[session.i];
   ar.innerHTML='<div class="card fcard">'
-    +'<div class="fmeta"><span class="badge b-'+it.type+'">'+TYPES[it.type]+'</span>'+(it.pos?'<span class="boxb">'+esc(it.pos)+'</span>':'')+'<span class="boxb">箱'+it.box+'</span><span class="fprog num">'+(session.i+1)+' / '+session.cards.length+'</span></div>'
-    +'<div class="ffront">'+esc(it.front)+'</div>'
+    +'<div class="fmeta"><span class="badge b-'+it.type+'">'+TYPES[it.type]+'</span>'+(it.pos?'<span class="boxb">'+esc(it.pos)+'</span>':'')+'<span class="boxb">箱'+it.box+'</span><span id="ctimer" class="ctimer num" hidden></span><span class="fprog num">'+(session.i+1)+' / '+session.cards.length+'</span></div>'
+    +'<div class="ffront">'+esc(it.front)+' <button id="spkBtn" class="spk" data-nosound aria-label="発音を聞く">🔊</button></div>'
     +'<div class="redsheet" id="rs"><div class="fback">'+esc(it.back)+(it.note?'<div class="fnote">'+esc(it.note)+'</div>':'')+'</div><button class="rs-cover" id="rsCover">赤シートをめくる</button></div>'
-    +'<div class="btnrow fbtns" id="fBtns" hidden><button class="btn ghost" id="ngBtn">× まだ</button><button class="btn" id="okBtn">○ 覚えた</button></div>'
+    +'<div class="btnrow fbtns" id="fBtns" hidden><button class="btn ghost" id="ngBtn" data-nosound>× まだ</button><button class="btn" id="okBtn" data-nosound>○ 覚えた</button></div>'
     +'</div>';
-  $('rsCover').addEventListener('click',function(){$('rs').classList.add('revealed');$('fBtns').hidden=false});
+  $('rsCover').addEventListener('click',revealCard);
+  $('spkBtn').addEventListener('click',function(){speakWord(it.front)});
   $('okBtn').addEventListener('click',function(){answerCard(true)});
   $('ngBtn').addEventListener('click',function(){answerCard(false)});
+  if(S.settings.autoSpeak)speakWord(it.front);
+  startCardTimer();
 }
 function answerCard(ok){
+  clearCardTimer();stopSpeak();
+  beep(ok?'ok':'ng');
   const it=session.cards[session.i];
   gradeItem(it,ok);
   S.cardStats.a++;
@@ -1096,7 +1186,7 @@ function renderListen(){
     });
     h+='<div class="qexp" hidden></div></div>';
   });
-  h+='<button id="lgradeBtn" class="btn">採点する</button><div id="listenResult"></div>';
+  h+='<button id="lgradeBtn" class="btn" data-nosound>採点する</button><div id="listenResult"></div>';
   $('listen').innerHTML=h;
   $('playBtn').addEventListener('click',function(){
     if(speakLines(data.lines)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
@@ -1155,13 +1245,14 @@ function gradeListen(){
   rh+='<button id="lagainBtn" class="btn ghost">もう1題つくる</button></div>';
   $('listenResult').innerHTML=rh;
   $('lgradeBtn').hidden=true;
+  beep(score===data.questions.length?'done':(score?'ok':'ng'));
   $('lagainBtn').addEventListener('click',genListening);
 }
 $('lgenBtn').addEventListener('click',genListening);
 
 /* モード切替 */
 function setMode(m){
-  stopSpeak();
+  stopSpeak();clearCardTimer();
   $('modeReading').classList.toggle('on',m==='reading');
   $('modeListen').classList.toggle('on',m==='listen');
   $('modeCards').classList.toggle('on',m==='cards');
@@ -1452,7 +1543,23 @@ $('impApply').addEventListener('click',async function(){
 });
 
 /* ================= 設定 ================= */
-function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||''}
+function renderPrefs(){
+  const wrap=$('prefChips');wrap.innerHTML='';
+  [['sound','効果音'],['autoSpeak','単語の自動読み上げ'],['timer','5秒タイマー']].forEach(function(p){
+    const on=!!S.settings[p[0]];
+    const b=document.createElement('button');
+    b.className='chip fchip'+(on?' on':'');
+    b.setAttribute('aria-pressed',on?'true':'false');
+    b.textContent=(on?'✓ ':'')+p[1];
+    b.addEventListener('click',function(){
+      S.settings[p[0]]=!S.settings[p[0]];
+      if(p[0]==='sound'&&S.settings.sound)beep('tap');
+      save();renderPrefs();
+    });
+    wrap.appendChild(b);
+  });
+}
+function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs()}
 $('setSave').addEventListener('click',function(){
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
