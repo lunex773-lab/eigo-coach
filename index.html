@@ -165,6 +165,21 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .tgl.on{border-color:var(--navy);color:var(--navy);font-weight:700;background:#f2f6fb}
 .assignbar{background:#fff7e6;border:1px solid #ecd9a8;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px;line-height:1.7}
 
+.player{background:#f7f8f6;border-radius:10px;padding:14px;text-align:center;margin-top:6px}
+.pbig{width:72px;height:72px;border-radius:50%;background:var(--red);color:#fff;border:0;font-size:26px;display:inline-flex;align-items:center;justify-content:center}
+.pbig:active{background:var(--red-dark)}
+.pbig:disabled{opacity:.5}
+.psub{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.psub button{background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600}
+.plays{font-size:12px;color:var(--sub);margin-top:8px}
+.script{font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.8;text-align:left;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px}
+.script b{color:var(--navy)}
+
+.chart{width:100%;height:auto;display:block}
+.shareimg{width:100%;border-radius:10px;margin-top:10px;border:1px solid var(--line)}
+.obrow{display:block;margin-bottom:10px;font-size:13.5px;line-height:1.7}
+.obrow b{display:block;color:var(--red-dark)}
+
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 nav button{flex:1;padding:12px 0 10px;background:none;border:0;font-size:12.5px;color:var(--sub);font-weight:600;position:relative}
 nav button.on{color:var(--red)}
@@ -223,8 +238,9 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
 <!-- ===== テスト ===== -->
 <section id="tab-test" class="tab">
   <div class="seg">
-    <button id="modeReading" class="on">読解テスト</button>
-    <button id="modeCards">単語カード<span id="dueBadge" class="dueb num" hidden></span></button>
+    <button id="modeReading" class="on">読解</button>
+    <button id="modeListen">リスニング</button>
+    <button id="modeCards">単語<span id="dueBadge" class="dueb num" hidden></span></button>
   </div>
   <div id="readingPane">
     <div class="card">
@@ -234,6 +250,17 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     </div>
     <div id="quizErr" class="err" hidden></div>
     <div id="quiz"></div>
+  </div>
+  <div id="listenPane" hidden>
+    <div class="card">
+      <div class="lbl">リスニング（共通テスト形式）</div>
+      <p class="hint" style="margin:6px 0 2px">端末の音声読み上げを使うため、音声のAPI費用はかかりません。スクリプトと和訳は採点後に表示されます。</p>
+      <div class="tlbl">読み上げ速度</div>
+      <div id="rateChips" class="chips" style="margin:6px 0 2px"></div>
+      <button id="lgenBtn" class="btn">問題を作成</button>
+    </div>
+    <div id="listenErr" class="err" hidden></div>
+    <div id="listen"></div>
   </div>
   <div id="cardsPane" hidden>
     <div class="card">
@@ -252,6 +279,13 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   <div class="card">
     <div class="lbl">サマリー</div>
     <div id="recStats" class="statgrid"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">継続</div>
+    <div id="streakStats" class="statgrid"></div>
+    <div id="chartBox" style="margin-top:12px"></div>
+    <button id="shareBtn" class="btn ghost" style="margin-top:10px">学習カードを画像で共有</button>
+    <div id="shareOut"></div>
   </div>
   <div class="card">
     <div class="lbl">出題範囲カバー（20分野）</div>
@@ -323,6 +357,13 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     </div>
   </div>
   <div class="card">
+    <div class="lbl">フィードバック</div>
+    <p class="hint" style="margin:6px 0 2px">不具合・改善案を開発者に送ります（匿名・学習データは送信されません）。</p>
+    <textarea id="fbText" rows="3" placeholder="例：分野4の表が崩れていた／こんな機能が欲しい"></textarea>
+    <button id="fbSend" class="btn">送信</button>
+    <div id="fbOut" class="hint" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
     <div class="lbl">データ</div>
     <p class="hint">データはこの端末のブラウザ内（localStorage）のみに保存されます。定期的に「記録 → バックアップ」で書き出してください。</p>
     <button id="setReset" class="btn danger">全データを初期化</button>
@@ -342,6 +383,17 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
 </nav>
 
 <div id="toast" hidden></div>
+<div id="ob" class="modal" hidden>
+  <div class="mbox">
+    <div class="stamp" style="margin-bottom:10px">英</div>
+    <h2 style="font-size:17px;margin:0 0 10px">共テ英語コーチへようこそ</h2>
+    <div class="obrow"><b>1. 質問する</b>単語・熟語は語源から、英文は構造から解説。学んだ内容は自動でカードになります。</div>
+    <div class="obrow"><b>2. テストされる</b>あなたの弱点を織り込んだ読解・リスニング・単語テストを自動生成。質問していない分野も抜き打ちで出ます。</div>
+    <div class="obrow"><b>3. 記録が残る</b>間違えた語ほど頻繁に、覚えた語は間隔をあけて再出題。継続日数も記録されます。</div>
+    <p class="hint" style="margin:10px 0 0">データはこの端末にのみ保存されます。「記録 → バックアップ」で定期的に書き出してください。</p>
+    <button id="obDone" class="btn" style="margin-top:12px">始める</button>
+  </div>
+</div>
 <div id="modal" class="modal" hidden>
   <div class="mbox">
     <div id="modalMsg"></div>
@@ -360,7 +412,7 @@ const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算
 const TYPES={vocab:'単語',idiom:'熟語',grammar:'文法',reading:'読解'};
 const BUCKETS=[
  {id:1,name:'掲示・案内・広告',desc:'ポスターやお知らせから必要な情報を探す',fmt:'掲示物・ポスター形式。タイトル行＋日時・場所・料金・申込方法・注意事項を短い行で並べる。物語にしない。'},
- {id:2,name:'ウェブサイト・SNS',desc:'サイトの構成から情報を拾い読みする',fmt:'ウェブページ風。ページ見出し＋セクション名＋箇条書き情報。SNSなら投稿＋コメント2件の形式。'},
+ {id:2,name:'ウェブサイト・SNS',desc:'サイトの構成から情報を拾い読みする',fmt:'ウェブページ風（HTMLタグ禁止・テキストのみ）。「■ セクション名」の見出し＋「- 項目」の箇条書き。SNSなら投稿＋コメント2件の形式。'},
  {id:3,name:'Eメール・メッセージ',desc:'目的・依頼・返信内容の把握',fmt:'From:/To:/Subject:の行を付けたメール。往復なら【資料1】依頼メール＋【資料2】返信メールの2通。'},
  {id:4,name:'予定表・時刻表・料金表',desc:'表と本文の照合',fmt:'必ず表を含める。「9:00 | Opening Ceremony」のように1行1項目の簡易表＋短い説明文。設問は表と本文の照合を含む。'},
  {id:5,name:'レシピ・手順・説明書',desc:'手順の順序と条件の理解',fmt:'材料・準備物のリスト＋Step 1, Step 2...の番号付き手順。順序や条件を問う設問を含める。'},
@@ -382,11 +434,17 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std'},items:[],buckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},tagDefs:[],usage:{in:0,out:0,calls:0}}}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,onboarded:false},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
 function migrate(s){
   if(!s.settings.askMode)s.settings.askMode='std';
+  if(typeof s.settings.rate!=='number')s.settings.rate=1;
+  if(typeof s.settings.onboarded!=='boolean')s.settings.onboarded=(s.items.length>0||s.asks.length>0);
   if(typeof s.askTotal!=='number')s.askTotal=s.asks.length;
   if(!s.cardStats||typeof s.cardStats.a!=='number')s.cardStats={a:0,c:0};
+  if(!s.listenStats||typeof s.listenStats.a!=='number')s.listenStats={a:0,c:0};
+  if(!s.lbuckets)s.lbuckets={};
+  if(!s.days)s.days={};
+  if(!s.streak||typeof s.streak.cur!=='number')s.streak={cur:0,best:0,last:''};
   if(!Array.isArray(s.tagDefs))s.tagDefs=[];
   s.items.forEach(function(it){
     if(typeof it.pos!=='string')it.pos='';
@@ -406,6 +464,19 @@ function pad(n){return String(n).padStart(2,'0')}
 function todayStr(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function uid(){return 'it_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function touch(){
+  const t=todayStr();
+  S.days[t]=(S.days[t]||0)+1;
+  const st=S.streak;
+  if(st.last!==t){
+    st.cur=(st.last===addDays(-1))?st.cur+1:1;
+    if(st.cur>st.best)st.best=st.cur;
+    st.last=t;
+  }
+  const keep=addDays(-60);
+  Object.keys(S.days).forEach(function(d){if(d<keep)delete S.days[d]});
+}
+function last14(){const a=[];for(let i=13;i>=0;i--){const d=addDays(-i);a.push({d:d,n:S.days[d]||0})}return a}
 let toastT=null;
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2800)}
 function confirmBox(msg){return new Promise(function(res){
@@ -454,6 +525,7 @@ async function api(messages,opt){
 
 /* ================= タブ ================= */
 function switchTab(id){
+  stopSpeak();
   document.querySelectorAll('.tab').forEach(function(s){s.classList.toggle('active',s.id===id)});
   document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===id)});
   if(id==='tab-rec')renderRec();
@@ -591,6 +663,7 @@ async function doAsk(){
     renderAskItems(added);
     renderHist();
     renderCardStatus();
+    touch();save();
   }catch(e){$('askErr').textContent=e.message;$('askErr').hidden=false}
   finally{btn.disabled=false;btn.textContent='質問する'}
 }
@@ -660,6 +733,7 @@ const SYS_READING=[
 'あなたは大学入学共通テスト（英語リーディング）の作問者。条件に従い1題作る。',
 '- 「出題分野」と「形式指定」に厳密に従う。形式指定にある資料・表・メール・掲示・データなどは必ずpassage内に作る。省略禁止。',
 '- 複数の資料は【資料1】【資料2】のような見出し行を付ける。メールはFrom:/To:/Subject:の行を付ける。表やデータは「9:00 | Opening」「2020: 45%」のように1行1項目で表す（HTMLやMarkdownの表記法は使わない）。',
+'- passageは純粋なプレーンテキストのみ。<h1>や<li>などのHTMLタグ、#や*などのMarkdown記法は絶対に出力しない。見出しは「■ Weather Tips」、箇条書きは「- Temperature: 20°C」のようにテキスト記号で表す。',
 '- passage内の改行はJSON文字列の\\nで表現し、構造を見やすく整える。',
 '- 英文全体で80〜200語、高校生に身近で自然な題材、難易度指定に従う。',
 '- 「弱点リスト」の語句・文法を、不自然にならない範囲でできるだけ本文に織り込む。',
@@ -718,6 +792,7 @@ async function genReading(){
     });
     const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:2000,temperature:0.7});
     const q=parseModelJSON(content);
+    if(q.passage)q.passage=String(q.passage).replace(/<\/?[a-zA-Z][^>]*>/g,'').replace(/\n{3,}/g,'\n\n');
     if(!q.passage||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
     currentQuiz={data:q,bucket:bucket,graded:false};
     renderQuiz();
@@ -794,6 +869,7 @@ function gradeQuiz(){
   S.buckets[bucket.id]=st;
   S.tests.push({d:todayStr(),mode:'reading',bucketId:bucket.id,score:score,total:data.questions.length,used:(data.usedItemFronts||[]).slice(0,10)});
   if(S.tests.length>100)S.tests=S.tests.slice(-100);
+  touch();
   save();
   // 織り込んだ弱点語句を本文にハイライト（採点後に表示＝ネタバレ防止）
   const fronts=(data.usedItemFronts||[]).map(function(f){return String(f).trim()}).filter(Boolean).sort(function(a,b){return b.length-a.length});
@@ -907,22 +983,197 @@ function answerCard(ok){
   gradeItem(it,ok);
   S.cardStats.a++;
   if(ok){S.cardStats.c++;session.ok++}else{session.ng++}
+  touch();
   save();
   session.i++;
   renderCard();
 }
 $('cardStart').addEventListener('click',startCards);
 
-/* モード切替 */
-function setMode(read){
-  $('modeReading').classList.toggle('on',read);
-  $('modeCards').classList.toggle('on',!read);
-  $('readingPane').hidden=!read;
-  $('cardsPane').hidden=read;
-  if(!read)renderCardStatus();
+/* ================= リスニング ================= */
+const LBUCKETS=[
+ {id:1,name:'日常会話',fmt:'2人（A/B）の自然な対話。4〜8回の発話。'},
+ {id:2,name:'アナウンス・お知らせ',fmt:'1人による校内放送・駅・店内アナウンス。'},
+ {id:3,name:'説明・講義',fmt:'1人が事実を説明する短いモノローグ。'},
+ {id:4,name:'意見・スピーチ',fmt:'1人が意見と理由を述べるスピーチ。'},
+ {id:5,name:'数値の聞き取り',fmt:'値段・時刻・個数などの数値情報を3つ以上含む会話。数値を問う設問を必ず1問入れる。'},
+ {id:6,name:'グループの相談',fmt:'3人（A/B/C）が予定や役割を相談する会話。'}
+];
+const SYS_LISTEN=[
+'あなたは大学入学共通テスト（英語リスニング）の作問者。条件に従い1題作る。',
+'- 「形式指定」に厳密に従う。音声で読み上げるため、英文はすべて話し言葉として自然であること。',
+'- 全体で60〜130語。高校生に身近な題材。難易度指定に従う。',
+'- 「弱点リスト」の語句を、不自然にならない範囲でセリフに織り込む。',
+'- 設問は3問・各4択・英語。音声だけで答えが一意に決まること（図表に依存しない）。',
+'- 各設問に日本語の解説を付ける。',
+'必ず次のJSONのみを出力:',
+'{"title":"英語タイトル","lines":[{"speaker":"A","text":"英文のセリフ"}],"translationJa":"全体の自然な日本語訳","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説"}],"pointJa":"聞き取りのコツを日本語で1文"}',
+'speakerは A / B / C / Narrator のいずれか。textにはHTMLやMarkdown、話者名を含めない。answerは0〜3。'
+].join('\n');
+
+let voices=[];
+function loadVoices(){try{voices=window.speechSynthesis?speechSynthesis.getVoices()||[]:[]}catch(e){voices=[]}}
+if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function pickVoice(pref){
+  if(!voices.length)loadVoices();
+  const en=voices.filter(function(v){return /^en/i.test(v.lang)});
+  if(!en.length)return null;
+  const us=en.filter(function(v){return /^en[-_]US/i.test(v.lang)});
+  const pool=us.length?us:en;
+  return pool[pref%pool.length];
 }
-$('modeReading').addEventListener('click',function(){setMode(true)});
-$('modeCards').addEventListener('click',function(){setMode(false)});
+function stopSpeak(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
+function speakLines(lines,onEnd){
+  if(!window.speechSynthesis){toast('この端末は音声読み上げに対応していません');return false}
+  stopSpeak();
+  const names=[];
+  lines.forEach(function(l){const s=l.speaker||'A';if(names.indexOf(s)<0)names.push(s)});
+  lines.forEach(function(l,i){
+    const u=new SpeechSynthesisUtterance(String(l.text||''));
+    const v=pickVoice(names.indexOf(l.speaker||'A'));
+    if(v)u.voice=v;
+    u.lang='en-US';
+    u.rate=S.settings.rate||1;
+    if(i===lines.length-1&&onEnd)u.onend=onEnd;
+    speechSynthesis.speak(u);
+  });
+  return true;
+}
+function renderRateChips(){
+  const wrap=$('rateChips');wrap.innerHTML='';
+  [[0.75,'0.75倍'],[1,'1.0倍（本番）'],[1.25,'1.25倍']].forEach(function(p){
+    const b=document.createElement('button');
+    b.className='chip fchip'+(S.settings.rate===p[0]?' on':'');
+    b.textContent=p[1];
+    b.addEventListener('click',function(){S.settings.rate=p[0];save();stopSpeak();renderRateChips()});
+    wrap.appendChild(b);
+  });
+}
+function pickLBucket(){
+  const w=LBUCKETS.map(function(b){
+    const st=S.lbuckets[b.id];
+    if(!st||!st.a)return {b:b,w:3};
+    return {b:b,w:(st.c/st.a)<0.7?2:1};
+  });
+  const total=w.reduce(function(s,x){return s+x.w},0);
+  let r=Math.random()*total;
+  for(let i=0;i<w.length;i++){r-=w[i].w;if(r<=0)return w[i].b}
+  return w[w.length-1].b;
+}
+let currentListen=null;
+async function genListening(){
+  const btn=$('lgenBtn');btn.disabled=true;btn.textContent='作成中…（10秒ほど）';
+  $('listenErr').hidden=true;$('listen').innerHTML='';stopSpeak();
+  const bucket=pickLBucket();
+  const weak=pickWeakItems();
+  try{
+    const user=JSON.stringify({
+      '形式指定':{name:bucket.name,fmt:bucket.fmt},
+      '難易度':diffLabel(),
+      '弱点リスト':weak.map(function(x){return {front:x.front,back:x.back}})
+    });
+    const content=await api([{role:'system',content:SYS_LISTEN},{role:'user',content:user}],{json:true,maxTokens:1500,temperature:0.7});
+    const q=parseModelJSON(content);
+    if(!Array.isArray(q.lines)||!q.lines.length||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
+    q.lines.forEach(function(l){l.text=String(l.text||'').replace(/<\/?[a-zA-Z][^>]*>/g,'')});
+    currentListen={data:q,bucket:bucket,graded:false,plays:0};
+    renderListen();
+  }catch(e){$('listenErr').textContent=e.message;$('listenErr').hidden=false}
+  finally{btn.disabled=false;btn.textContent='問題を作成'}
+}
+function renderListen(){
+  const data=currentListen.data,bucket=currentListen.bucket,L='ABCD';
+  let h='<div class="card">';
+  h+='<div class="lbl">形式 '+bucket.id+'：'+esc(bucket.name)+'</div>';
+  h+='<div class="player"><button id="playBtn" class="pbig" aria-label="再生">▶</button>'
+    +'<div class="psub"><button id="stopBtn">停止</button><button id="replayBtn">もう一度</button></div>'
+    +'<div class="plays num" id="playCount">再生 0回</div></div>';
+  h+='<p class="hint" style="margin-top:8px">本番は原則1回（一部2回）。まずは1回で解く練習を。</p></div>';
+  data.questions.forEach(function(qq,i){
+    h+='<div class="card qcard" data-i="'+i+'"><div class="qhead">Q'+(i+1)+'. '+esc(qq.q)+'</div>';
+    (qq.choices||[]).slice(0,4).forEach(function(c,j){
+      h+='<label class="choice" data-j="'+j+'"><input type="radio" name="lq'+i+'" value="'+j+'"><span class="bub">'+L[j]+'</span><span class="ctext">'+esc(c)+'</span></label>';
+    });
+    h+='<div class="qexp" hidden></div></div>';
+  });
+  h+='<button id="lgradeBtn" class="btn">採点する</button><div id="listenResult"></div>';
+  $('listen').innerHTML=h;
+  $('playBtn').addEventListener('click',function(){
+    if(speakLines(data.lines)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+  });
+  $('replayBtn').addEventListener('click',function(){
+    if(speakLines(data.lines)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+  });
+  $('stopBtn').addEventListener('click',stopSpeak);
+  document.querySelectorAll('#listen .choice').forEach(function(lb){
+    lb.addEventListener('click',function(){
+      if(currentListen.graded)return;
+      lb.closest('.qcard').querySelectorAll('.choice').forEach(function(x){x.classList.remove('picked')});
+      lb.classList.add('picked');
+      lb.querySelector('input').checked=true;
+    });
+  });
+  $('lgradeBtn').addEventListener('click',gradeListen);
+  window.scrollTo(0,0);
+}
+function gradeListen(){
+  if(!currentListen||currentListen.graded)return;
+  const data=currentListen.data,bucket=currentListen.bucket;
+  const answers=[];
+  for(let i=0;i<data.questions.length;i++){
+    const sel=document.querySelector('input[name="lq'+i+'"]:checked');
+    if(!sel){toast('全問に回答してください');return}
+    answers.push(Number(sel.value));
+  }
+  currentListen.graded=true;stopSpeak();
+  let score=0;
+  data.questions.forEach(function(qq,i){
+    const ok=answers[i]===qq.answer;
+    if(ok)score++;
+    const card=document.querySelector('#listen .qcard[data-i="'+i+'"]');
+    card.querySelectorAll('.choice').forEach(function(lb){
+      const j=Number(lb.dataset.j);
+      if(j===qq.answer)lb.classList.add('right');
+      else if(j===answers[i])lb.classList.add('wrong');
+      lb.querySelector('input').disabled=true;
+    });
+    const ex=card.querySelector('.qexp');
+    ex.hidden=false;
+    ex.innerHTML=(ok?'<b class="okt">正解</b> ':'<b class="ngt">不正解</b> ')+nl2html(qq.explanation||'');
+  });
+  const st=S.lbuckets[bucket.id]||{a:0,c:0,last:''};
+  st.a+=data.questions.length;st.c+=score;st.last=todayStr();
+  S.lbuckets[bucket.id]=st;
+  S.listenStats.a+=data.questions.length;S.listenStats.c+=score;
+  S.tests.push({d:todayStr(),mode:'listen',bucketId:bucket.id,score:score,total:data.questions.length});
+  if(S.tests.length>100)S.tests=S.tests.slice(-100);
+  touch();save();
+  let rh='<div class="card result"><div class="score num">'+score+' / '+data.questions.length+'</div>';
+  rh+='<div class="script">'+data.lines.map(function(l){return '<b>'+esc(l.speaker||'A')+':</b> '+esc(l.text)}).join('<br>')+'</div>';
+  if(data.translationJa)rh+='<div class="transJa"><div class="lbl" style="margin-bottom:4px">全文和訳</div>'+nl2html(data.translationJa)+'</div>';
+  if(data.pointJa)rh+='<p class="hint">コツ：'+esc(data.pointJa)+'</p>';
+  rh+='<button id="lagainBtn" class="btn ghost">もう1題つくる</button></div>';
+  $('listenResult').innerHTML=rh;
+  $('lgradeBtn').hidden=true;
+  $('lagainBtn').addEventListener('click',genListening);
+}
+$('lgenBtn').addEventListener('click',genListening);
+
+/* モード切替 */
+function setMode(m){
+  stopSpeak();
+  $('modeReading').classList.toggle('on',m==='reading');
+  $('modeListen').classList.toggle('on',m==='listen');
+  $('modeCards').classList.toggle('on',m==='cards');
+  $('readingPane').hidden=m!=='reading';
+  $('listenPane').hidden=m!=='listen';
+  $('cardsPane').hidden=m!=='cards';
+  if(m==='cards')renderCardStatus();
+  if(m==='listen')renderRateChips();
+}
+$('modeReading').addEventListener('click',function(){setMode('reading')});
+$('modeListen').addEventListener('click',function(){setMode('listen')});
+$('modeCards').addEventListener('click',function(){setMode('cards')});
 
 /* ================= 記録 ================= */
 let filt='all';
@@ -930,6 +1181,81 @@ let recListAll=false;
 let recOpenId=null;
 let assignTag=null;
 function stat(l,v,s){return '<div class="stat"><div class="sl">'+l+'</div><div class="sv num">'+v+'</div><div class="ss">'+s+'</div></div>'}
+function curStreak(){
+  const st=S.streak||{cur:0,best:0,last:''};
+  if(st.last===todayStr()||st.last===addDays(-1))return st.cur;
+  return 0;
+}
+function renderStreak(){
+  const st=S.streak||{cur:0,best:0,last:''};
+  const arr=last14();
+  const days14=arr.filter(function(x){return x.n>0}).length;
+  const acts=arr.reduce(function(s,x){return s+x.n},0);
+  $('streakStats').innerHTML=
+    stat('連続学習',curStreak()+'日',(st.last===todayStr()?'今日は達成済み':'今日まだ未学習'))
+    +stat('最長記録',(st.best||0)+'日','自己ベスト')
+    +stat('直近14日',days14+'日','学習した日数')
+    +stat('質問数',(S.askTotal||S.asks.length)+'件','累計');
+  const max=Math.max(1,Math.max.apply(null,arr.map(function(x){return x.n})));
+  const W=320,H=76,bw=W/arr.length;
+  let s='<svg viewBox="0 0 '+W+' '+(H+16)+'" class="chart" role="img" aria-label="直近14日の学習量">';
+  arr.forEach(function(x,i){
+    const h=x.n?Math.max(3,Math.round((x.n/max)*H)):2;
+    s+='<rect x="'+(i*bw+2.5)+'" y="'+(H-h)+'" width="'+(bw-5)+'" height="'+h+'" rx="2" fill="'+(x.n?'var(--red)':'#dfe2dd')+'"></rect>';
+  });
+  s+='<text x="0" y="'+(H+13)+'" font-size="9" fill="#737a86">14日前</text>';
+  s+='<text x="'+W+'" y="'+(H+13)+'" font-size="9" text-anchor="end" fill="#737a86">今日 ・ 合計'+acts+'回</text></svg>';
+  $('chartBox').innerHTML=s;
+}
+function shareImage(){
+  const c=document.createElement('canvas');c.width=1080;c.height=1080;
+  const x=c.getContext('2d');
+  if(!x.roundRect){x.roundRect=function(a,b,w,h){this.rect(a,b,w,h);return this}}
+  const rt=S.tests.filter(function(t){return t.mode==='reading'});
+  const ra=rt.reduce(function(s,t){return s+t.total},0);
+  const rc=rt.reduce(function(s,t){return s+t.score},0);
+  const cs=S.cardStats||{a:0,c:0};
+  x.fillStyle='#f4f5f2';x.fillRect(0,0,1080,1080);
+  x.fillStyle='#ffffff';x.strokeStyle='#dfe2dd';x.lineWidth=3;
+  x.beginPath();x.roundRect(60,60,960,960,32);x.fill();x.stroke();
+  x.fillStyle='#cc2b1d';x.beginPath();x.roundRect(110,120,96,96,16);x.fill();
+  x.fillStyle='#fff';x.font='bold 56px sans-serif';x.textAlign='center';x.fillText('英',158,188);
+  x.textAlign='left';x.fillStyle='#20242c';x.font='bold 44px sans-serif';x.fillText('共テ英語コーチ',228,170);
+  x.fillStyle='#737a86';x.font='26px sans-serif';x.fillText('質問 → 蓄積 → 出題',228,212);
+  x.textAlign='center';
+  x.fillStyle='#737a86';x.font='bold 28px sans-serif';x.fillText('連続学習',540,320);
+  x.fillStyle='#cc2b1d';x.font='bold 160px sans-serif';x.fillText(curStreak()+'日',540,470);
+  const cells=[
+    ['カード',S.items.length+'枚'],
+    ['読解正答率',ra?Math.round(rc/ra*100)+'%':'—'],
+    ['単語正答率',cs.a?Math.round(cs.c/cs.a*100)+'%':'—'],
+    ['質問数',(S.askTotal||S.asks.length)+'件']
+  ];
+  cells.forEach(function(cl,i){
+    const cx=270+(i%2)*540, cy=580+Math.floor(i/2)*150;
+    x.fillStyle='#f7f8f6';x.beginPath();x.roundRect(cx-200,cy-60,400,120,16);x.fill();
+    x.fillStyle='#737a86';x.font='bold 24px sans-serif';x.fillText(cl[0],cx,cy-14);
+    x.fillStyle='#20242c';x.font='bold 46px sans-serif';x.fillText(cl[1],cx,cy+40);
+  });
+  const arr=last14();
+  const max=Math.max(1,Math.max.apply(null,arr.map(function(v){return v.n})));
+  arr.forEach(function(v,i){
+    const bw=48,gx=140+i*bw,h=v.n?Math.max(6,(v.n/max)*110):5;
+    x.fillStyle=v.n?'#cc2b1d':'#dfe2dd';
+    x.beginPath();x.roundRect(gx,900-h,bw-10,h,4);x.fill();
+  });
+  x.fillStyle='#737a86';x.font='24px sans-serif';x.fillText('直近14日の学習量',540,955);
+  x.fillStyle='#20242c';x.font='bold 26px sans-serif';x.fillText('#共テ英語コーチ',540,1000);
+  c.toBlob(async function(blob){
+    if(!blob){toast('画像を作れませんでした');return}
+    const file=new File([blob],'eigo-coach.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file]});return}catch(e){}
+    }
+    const url=URL.createObjectURL(blob);
+    $('shareOut').innerHTML='<img src="'+url+'" class="shareimg" alt="学習カード"><p class="hint">画像を長押しして保存できます。</p>';
+  },'image/png');
+}
 function renderTagDefs(){
   const wrap=$('tagDefList');
   if(!S.tagDefs.length){
@@ -974,11 +1300,13 @@ function renderRec(){
   const ra=rt.reduce(function(s,t){return s+t.total},0);
   const rc=rt.reduce(function(s,t){return s+t.score},0);
   const cs=S.cardStats||{a:0,c:0};
+  const ls=S.listenStats||{a:0,c:0};
   $('recStats').innerHTML=
     stat('カード',items.length+'枚','単語'+by('vocab')+'・熟語'+by('idiom')+'・文法'+by('grammar')+'・読解'+by('reading'))
     +stat('読解テスト',rt.length+'回',ra?('正答率 '+Math.round(rc/ra*100)+'%'):'—')
-    +stat('質問数',(S.askTotal||S.asks.length)+'件','累計')
+    +stat('リスニング',ls.a?(Math.round(ls.c/ls.a*100)+'%'):'—','累計 '+ls.a+'問')
     +stat('単語テスト正答率',cs.a?(Math.round(cs.c/cs.a*100)+'%'):'—','累計 '+cs.a+'回・読解は含まず');
+  renderStreak();
   let ch='';
   BUCKETS.forEach(function(b){
     const st=S.buckets[b.id];
@@ -1146,6 +1474,25 @@ $('setReset').addEventListener('click',async function(){
   S=fresh();save();loadSettings();renderRec();renderCardStatus();toast('初期化しました');
 });
 
+$('fbSend').addEventListener('click',async function(){
+  const txt=$('fbText').value.trim();
+  if(!txt){toast('内容を入力してください');return}
+  let url=(S.settings.workerUrl||'').trim();
+  if(!url){toast('先に接続設定を行ってください');return}
+  if(!/^https?:\/\//.test(url))url='https://'+url;
+  url=url.replace(/\/+$/,'')+'/feedback';
+  const btn=$('fbSend');btn.disabled=true;btn.textContent='送信中…';
+  try{
+    const headers={'Content-Type':'application/json'};
+    if(S.settings.appKey)headers['x-app-key']=S.settings.appKey;
+    const res=await fetch(url,{method:'POST',headers:headers,body:JSON.stringify({text:txt.slice(0,2000),at:new Date().toISOString(),app:'eigo-coach v1'})});
+    const d=await res.json().catch(function(){return {}});
+    if(!res.ok||d.error){throw new Error((d.error&&(d.error.message||d.error))||('HTTP '+res.status))}
+    $('fbText').value='';
+    $('fbOut').textContent='送信しました。開発の参考にします。';
+  }catch(e){$('fbOut').textContent='送信できません：'+e.message}
+  finally{btn.disabled=false;btn.textContent='送信'}
+});
 $('connToggle').addEventListener('click',function(){
   const b=$('connBox');b.hidden=!b.hidden;
   $('connToggle').textContent=b.hidden?'接続設定を開く':'接続設定を閉じる';
@@ -1155,14 +1502,31 @@ $('cmdToggle').addEventListener('click',function(){
   $('cmdToggle').textContent=b.hidden?'コマンド説明を見る':'閉じる';
 });
 
+$('shareBtn').addEventListener('click',function(){
+  try{shareImage()}catch(e){toast('画像を作れませんでした')}
+});
+$('obDone').addEventListener('click',function(){
+  S.settings.onboarded=true;save();
+  $('ob').hidden=true;
+  if(!S.settings.workerUrl){
+    switchTab('tab-set');
+    $('connBox').hidden=false;
+    $('connToggle').textContent='接続設定を閉じる';
+    toast('まず接続設定を行ってください');
+  }
+});
+
 /* ================= 起動 ================= */
 document.addEventListener('gesturestart',function(e){e.preventDefault()});
 loadSettings();
 setAskMode(S.settings.askMode==='deep');
+renderRateChips();
 renderHist();
 renderCardStatus();
 renderRec();
-if(!S.settings.workerUrl){
+if(!S.settings.onboarded){
+  $('ob').hidden=false;
+}else if(!S.settings.workerUrl){
   switchTab('tab-set');
   $('connBox').hidden=false;
   $('connToggle').textContent='接続設定を閉じる';
