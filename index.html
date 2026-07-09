@@ -181,7 +181,14 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .obrow b{display:block;color:var(--red-dark)}
 .ctimer{font-size:11px;font-weight:700;color:var(--sub);background:#eef0ec;border-radius:5px;padding:2px 7px}
 .ctimer.warn{background:var(--red);color:#fff}
-.spk{border:0;background:none;font-size:20px;padding:0 4px;vertical-align:4px;line-height:1}
+.spk{border:0;background:none;padding:2px 4px;line-height:0;color:var(--sub);vertical-align:2px}
+.spk svg{width:22px;height:22px}
+.spk:active{color:var(--red)}
+.edrow{margin-top:8px}
+.edrow label{display:block;font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.08em}
+.edrow input{margin-top:4px}
+.edsave{margin-top:10px}
+.hardb{display:inline-block;background:var(--purple);color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:2px 6px;margin-left:4px;letter-spacing:0}
 
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
 nav button{flex:1;padding:12px 0 10px;background:none;border:0;font-size:12.5px;color:var(--sub);font-weight:600;position:relative}
@@ -249,7 +256,11 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     <div class="card">
       <div class="lbl">共通テスト形式・読解</div>
       <p class="hint" style="margin:6px 0 2px">出題分野は自動選択（未出題・苦手を優先）。あなたの弱点語句を本文に織り込みます。</p>
-      <button id="genBtn" class="btn">テストを作成</button>
+      <div class="btnrow">
+        <button id="genBtn" class="btn">テストを作成</button>
+        <button id="genHardBtn" class="btn ghost" style="flex:0 0 40%">難問モード</button>
+      </div>
+      <p class="hint" style="margin-top:8px">難問モード：語数・語彙難度を上げ、推論と言い換えを要する設問を含む二次試験レベル。難易度の自動調整には影響しません。</p>
     </div>
     <div id="quizErr" class="err" hidden></div>
     <div id="quiz"></div>
@@ -291,8 +302,11 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
     <div id="shareOut"></div>
   </div>
   <div class="card">
-    <div class="lbl">出題範囲カバー（20分野）</div>
-    <div id="covList" style="margin-top:6px"></div>
+    <div class="lbl">出題範囲</div>
+    <div class="tlbl">読解（20分野）</div>
+    <div id="covList" style="margin-top:4px"></div>
+    <div class="tlbl" style="margin-top:14px">リスニング（6形式）</div>
+    <div id="lcovList" style="margin-top:4px"></div>
   </div>
   <div class="card">
     <div class="lbl">カード一覧</div>
@@ -378,7 +392,18 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   </div>
   <div class="card">
     <div class="lbl">このアプリについて</div>
-    <p class="hint">モデル：gpt-4o-mini（Worker側で固定）／対象：共通テスト英語リーディング。リスニング（配点の半分）は別途対策が必要。生成テストは過去問演習の代替ではなく補助。</p>
+    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach v1）<br>
+    質問した内容が自動でカードになり、弱点を織り込んだテストが生成される自分専用の英語学習ツール。</p>
+    <p class="hint" style="margin-top:8px">
+    ・<b>質問</b>：単語・英熟語モードは語源と語構成から解説。英文解説モードは構造・文法根拠・和訳まで（コマンド対応）。<br>
+    ・<b>読解</b>：共通テスト形式・20分野を未出題／苦手優先で自動選択。難問モードは二次試験レベル。<br>
+    ・<b>リスニング</b>：6形式を生成し、端末の音声読み上げで再生（速度調整可）。<br>
+    ・<b>単語</b>：品詞・タグで絞り込み、赤シート式・5箱の間隔反復。</p>
+    <p class="hint" style="margin-top:8px">
+    モデル：gpt-4o-mini（Worker側で固定）／音声：端末内蔵の読み上げ機能（追加費用なし）。<br>
+    学習データはこの端末のブラウザ内にのみ保存されます。定期的にバックアップを。</p>
+    <p class="hint" style="margin-top:8px">
+    <b>注意</b>：生成問題はAIによるもので、過去問演習の代替ではなく補助です。誤りを見つけたらフィードバックから報告してください。共通テストは配点の半分がリスニングです。</p>
   </div>
 </section>
 </main>
@@ -782,6 +807,7 @@ const SYS_READING=[
 '- 「弱点リスト」の語句・文法を、不自然にならない範囲でできるだけ本文に織り込む。',
 '- 設問は3問・各4択・英語。正解は本文（資料・表を含む）から一意に決まること。形式指定に設問の指示があれば必ず従う。選択肢は紛らわしいが公平に。',
 '- 各設問に日本語の解説を付ける。',
+'- 「難問モード」がtrueの場合: 語数を180〜260語に増やし、抽象度と語彙難度を上げ（CEFR B2相当）、推論または言い換えを必要とする設問を最低1問含め、選択肢は本文の表現をそのまま使わず言い換えで作る。ただし形式指定と資料の構造は必ず守る。',
 '必ず次のJSONのみを出力:',
 '{"title":"英語タイトル","passage":"英文本文","translationJa":"本文全体の自然な日本語訳","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説","relatedItemFronts":["設問に関係する弱点語句"]}],"usedItemFronts":["本文に織り込んだ弱点語句"],"pointJa":"この分野の解き方のコツを日本語で1文"}',
 'answerは0〜3のインデックス。弱点リストが空ならusedItemFrontsは[]。'
@@ -811,7 +837,7 @@ function pickWeakItems(){
   return cand.slice(0,6);
 }
 function diffLabel(){
-  const r=S.tests.filter(function(x){return x.mode==='reading'}).slice(-3);
+  const r=S.tests.filter(function(x){return x.mode==='reading'&&!x.hard}).slice(-3);
   if(!r.length)return '標準（CEFR A2〜B1）';
   const tot=r.reduce(function(s,x){return s+x.total},0);
   const sc=r.reduce(function(s,x){return s+x.score},0);
@@ -821,8 +847,12 @@ function diffLabel(){
   return '本番レベル（CEFR B1）';
 }
 let currentQuiz=null;
-async function genReading(){
-  const btn=$('genBtn');btn.disabled=true;btn.textContent='作成中…（10秒ほど）';
+async function genReading(hard){
+  hard=!!hard;
+  const btn=hard?$('genHardBtn'):$('genBtn');
+  const label=hard?'難問モード':'テストを作成';
+  $('genBtn').disabled=true;$('genHardBtn').disabled=true;
+  btn.textContent='作成中…（'+(hard?'15':'10')+'秒ほど）';
   $('quizErr').hidden=true;$('quiz').innerHTML='';
   const bucket=pickBucket();
   const weak=pickWeakItems();
@@ -830,23 +860,24 @@ async function genReading(){
     const user=JSON.stringify({
       '出題分野':{name:bucket.name,desc:bucket.desc},
       '形式指定':bucket.fmt,
-      '難易度':diffLabel(),
+      '難易度':hard?'難問（CEFR B2・二次試験レベル）':diffLabel(),
+      '難問モード':hard,
       '弱点リスト':weak.map(function(x){return {front:x.front,back:x.back}})
     });
-    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:2000,temperature:0.7});
+    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:hard?2000:1800,temperature:0.7});
     const q=parseModelJSON(content);
     if(q.passage)q.passage=String(q.passage).replace(/<\/?[a-zA-Z][^>]*>/g,'').replace(/\n{3,}/g,'\n\n');
     if(!q.passage||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
-    currentQuiz={data:q,bucket:bucket,graded:false};
+    currentQuiz={data:q,bucket:bucket,graded:false,hard:hard};
     renderQuiz();
   }catch(e){$('quizErr').textContent=e.message;$('quizErr').hidden=false}
-  finally{btn.disabled=false;btn.textContent='テストを作成'}
+  finally{$('genBtn').disabled=false;$('genHardBtn').disabled=false;btn.textContent=label}
 }
 function renderQuiz(){
   const data=currentQuiz.data,bucket=currentQuiz.bucket;
   const L='ABCD';
   let h='<div class="card">';
-  h+='<div class="lbl">出題分野 '+bucket.id+'：'+esc(bucket.name)+'</div>';
+  h+='<div class="lbl">出題分野 '+bucket.id+'：'+esc(bucket.name)+(currentQuiz.hard?' <span class="hardb">難問</span>':'')+'</div>';
   if(data.title)h+='<h2 class="ptitle">'+esc(data.title)+'</h2>';
   h+='<div class="passage" id="passageBox">'+nl2html(data.passage)+'</div></div>';
   data.questions.forEach(function(qq,i){
@@ -910,7 +941,7 @@ function gradeQuiz(){
   const st=S.buckets[bucket.id]||{a:0,c:0,last:''};
   st.a+=data.questions.length;st.c+=score;st.last=todayStr();
   S.buckets[bucket.id]=st;
-  S.tests.push({d:todayStr(),mode:'reading',bucketId:bucket.id,score:score,total:data.questions.length,used:(data.usedItemFronts||[]).slice(0,10)});
+  S.tests.push({d:todayStr(),mode:'reading',bucketId:bucket.id,score:score,total:data.questions.length,hard:!!currentQuiz.hard,used:(data.usedItemFronts||[]).slice(0,10)});
   if(S.tests.length>100)S.tests=S.tests.slice(-100);
   touch();
   save();
@@ -931,7 +962,8 @@ function gradeQuiz(){
   $('quizResult').innerHTML=rh;
   $('gradeBtn').hidden=true;
   beep(score===data.questions.length?'done':(score?'ok':'ng'));
-  $('againBtn').addEventListener('click',genReading);
+  const wasHard=!!currentQuiz.hard;
+  $('againBtn').addEventListener('click',function(){genReading(wasHard)});
   renderCardStatus();
 }
 function gradeItem(it,ok){
@@ -939,7 +971,8 @@ function gradeItem(it,ok){
   if(ok){it.stats.c++;it.box=Math.min(5,it.box+1)}else{it.box=1}
   it.due=addDays(INTERVALS[it.box]);
 }
-$('genBtn').addEventListener('click',genReading);
+$('genBtn').addEventListener('click',function(){genReading(false)});
+$('genHardBtn').addEventListener('click',function(){genReading(true)});
 
 /* ================= 単語カード ================= */
 let session=null;
@@ -1055,7 +1088,7 @@ function renderCard(){
   const it=session.cards[session.i];
   ar.innerHTML='<div class="card fcard">'
     +'<div class="fmeta"><span class="badge b-'+it.type+'">'+TYPES[it.type]+'</span>'+(it.pos?'<span class="boxb">'+esc(it.pos)+'</span>':'')+'<span class="boxb">箱'+it.box+'</span><span id="ctimer" class="ctimer num" hidden></span><span class="fprog num">'+(session.i+1)+' / '+session.cards.length+'</span></div>'
-    +'<div class="ffront">'+esc(it.front)+' <button id="spkBtn" class="spk" data-nosound aria-label="発音を聞く">🔊</button></div>'
+    +'<div class="ffront">'+esc(it.front)+' <button id="spkBtn" class="spk" data-nosound aria-label="発音を聞く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/></svg></button></div>'
     +'<div class="redsheet" id="rs"><div class="fback">'+esc(it.back)+(it.note?'<div class="fnote">'+esc(it.note)+'</div>':'')+'</div><button class="rs-cover" id="rsCover">赤シートをめくる</button></div>'
     +'<div class="btnrow fbtns" id="fBtns" hidden><button class="btn ghost" id="ngBtn" data-nosound>× まだ</button><button class="btn" id="okBtn" data-nosound>○ 覚えた</button></div>'
     +'</div>';
@@ -1272,6 +1305,18 @@ let recListAll=false;
 let recOpenId=null;
 let assignTag=null;
 function stat(l,v,s){return '<div class="stat"><div class="sl">'+l+'</div><div class="sv num">'+v+'</div><div class="ss">'+s+'</div></div>'}
+function covRows(list,store){
+  return list.map(function(b){
+    const st=store[b.id];
+    let dot='',right='未';
+    if(st&&st.a){
+      const p=Math.round(st.c/st.a*100);
+      right=st.a+'問 '+p+'%';
+      dot=p>=80?'g':(p>=60?'y':'r');
+    }
+    return '<div class="cov"><span class="dot '+dot+'"></span><span class="covn num">'+pad(b.id)+'</span><span class="covname">'+esc(b.name)+'</span><span class="covr num">'+right+'</span></div>';
+  }).join('');
+}
 function curStreak(){
   const st=S.streak||{cur:0,best:0,last:''};
   if(st.last===todayStr()||st.last===addDays(-1))return st.cur;
@@ -1398,18 +1443,8 @@ function renderRec(){
     +stat('リスニング',ls.a?(Math.round(ls.c/ls.a*100)+'%'):'—','累計 '+ls.a+'問')
     +stat('単語テスト正答率',cs.a?(Math.round(cs.c/cs.a*100)+'%'):'—','累計 '+cs.a+'回・読解は含まず');
   renderStreak();
-  let ch='';
-  BUCKETS.forEach(function(b){
-    const st=S.buckets[b.id];
-    let dot='',right='未';
-    if(st&&st.a){
-      const p=Math.round(st.c/st.a*100);
-      right=st.a+'問 '+p+'%';
-      dot=p>=80?'g':(p>=60?'y':'r');
-    }
-    ch+='<div class="cov"><span class="dot '+dot+'"></span><span class="covn num">'+pad(b.id)+'</span><span class="covname">'+esc(b.name)+'</span><span class="covr num">'+right+'</span></div>';
-  });
-  $('covList').innerHTML=ch;
+  $('covList').innerHTML=covRows(BUCKETS,S.buckets);
+  $('lcovList').innerHTML=covRows(LBUCKETS,S.lbuckets);
   renderTagDefs();
   const fw=$('itemFilter');fw.innerHTML='';
   [['all','すべて'],['vocab','単語'],['idiom','熟語'],['grammar','文法'],['reading','読解']].forEach(function(p){
@@ -1439,7 +1474,10 @@ function renderRec(){
         tchips='<div class="hint">タグがまだありません。上の「タグ」欄で作成してください。</div>';
       }
       ed='<div class="redit">'
-        +(i.note?'<div class="hint" style="margin-bottom:6px">'+esc(i.note)+'</div>':'')
+        +'<div class="edrow"><label>意味</label><input type="text" class="edBack" value="'+esc(i.back)+'" maxlength="120"></div>'
+        +'<div class="edrow"><label>メモ（語源・成り立ちなど）</label><input type="text" class="edNote" value="'+esc(i.note||'')+'" maxlength="80"></div>'
+        +'<button class="btn ghost edsave edSave">この内容で保存</button>'
+        +'<div class="tlbl" style="margin-top:12px">タグ</div>'
         +tchips
         +'</div>';
     }
@@ -1487,6 +1525,14 @@ function renderRec(){
   if(ed){
     const it=S.items.find(function(i){return i.id===recOpenId});
     if(it){
+      ed.addEventListener('click',function(e){e.stopPropagation()});
+      ed.querySelector('.edSave').addEventListener('click',function(){
+        const b=(ed.querySelector('.edBack').value||'').trim();
+        if(!b){toast('意味を入力してください');return}
+        it.back=b;
+        it.note=(ed.querySelector('.edNote').value||'').trim();
+        save();toast('保存しました');renderRec();renderCardStatus();
+      });
       ed.querySelectorAll('.tgl').forEach(function(tb){
         tb.addEventListener('click',function(e){
           e.stopPropagation();
