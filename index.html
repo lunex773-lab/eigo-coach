@@ -188,6 +188,7 @@ mark{background:#ffe9a8;padding:0 2px;border-radius:3px}
 .edrow label{display:block;font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.08em}
 .edrow input{margin-top:4px}
 .edsave{margin-top:10px}
+input[type=range]{width:100%;margin-top:8px;accent-color:var(--red);background:transparent}
 .hardb{display:inline-block;background:var(--purple);color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:2px 6px;margin-left:4px;letter-spacing:0}
 
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
@@ -258,9 +259,9 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
       <p class="hint" style="margin:6px 0 2px">出題分野は自動選択（未出題・苦手を優先）。あなたの弱点語句を本文に織り込みます。</p>
       <div class="btnrow">
         <button id="genBtn" class="btn">テストを作成</button>
-        <button id="genHardBtn" class="btn ghost" style="flex:0 0 40%">難問モード</button>
+        <button id="genHardBtn" class="btn ghost" style="flex:0 0 40%">難問</button>
       </div>
-      <p class="hint" style="margin-top:8px">難問モード：語数・語彙難度を上げ、推論と言い換えを要する設問を含む二次試験レベル。難易度の自動調整には影響しません。</p>
+      <p class="hint" style="margin-top:8px">難問：語数・語彙難度を上げ、推論と言い換えを要する二次試験レベル。難易度の自動調整には影響しません。</p>
     </div>
     <div id="quizErr" class="err" hidden></div>
     <div id="quiz"></div>
@@ -348,7 +349,12 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   <div class="card">
     <div class="lbl">学習設定</div>
     <div id="prefChips" class="chips" style="margin:10px 0 2px"></div>
+    <div class="edrow"><label>読み上げの音量 <span id="volVal" class="num"></span></label>
+      <input type="range" id="volRange" min="0" max="100" step="5" aria-label="読み上げの音量"></div>
+    <div class="edrow"><label>効果音の音量 <span id="sfxVal" class="num"></span></label>
+      <input type="range" id="sfxRange" min="0" max="100" step="5" aria-label="効果音の音量"></div>
     <p class="hint" style="margin-top:8px">タイマー：単語テストで1枚あたり5秒。時間切れになると答えが自動で表示されます（自動で×にはなりません）。</p>
+    <p class="hint" style="margin-top:6px">読み上げの音量は端末の音量ボタンとも連動します。マナーモードでは鳴らない場合があります。</p>
   </div>
   <div class="card">
     <div class="lbl">接続設定</div>
@@ -392,18 +398,20 @@ nav button.on::before{content:'';position:absolute;top:0;left:25%;right:25%;heig
   </div>
   <div class="card">
     <div class="lbl">このアプリについて</div>
-    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach v1）<br>
+    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach <b>v1.01</b>）<br>
     質問した内容が自動でカードになり、弱点を織り込んだテストが生成される自分専用の英語学習ツール。</p>
     <p class="hint" style="margin-top:8px">
     ・<b>質問</b>：単語・英熟語モードは語源と語構成から解説。英文解説モードは構造・文法根拠・和訳まで（コマンド対応）。<br>
-    ・<b>読解</b>：共通テスト形式・20分野を未出題／苦手優先で自動選択。難問モードは二次試験レベル。<br>
-    ・<b>リスニング</b>：6形式を生成し、端末の音声読み上げで再生（速度調整可）。<br>
-    ・<b>単語</b>：品詞・タグで絞り込み、赤シート式・5箱の間隔反復。</p>
+    ・<b>読解</b>：共通テスト形式・20分野を未出題／苦手優先で自動選択。「難問」は二次試験レベル（CEFR B2）。<br>
+    ・<b>リスニング</b>：6形式を生成。対話では話者ごとに男女の声を割り当てて聞き分けを訓練（速度0.75〜1.25倍）。<br>
+    ・<b>単語</b>：品詞・タグで絞り込み、赤シート式・5箱の間隔反復。発音の読み上げと5秒タイマー付き。</p>
     <p class="hint" style="margin-top:8px">
     モデル：gpt-4o-mini（Worker側で固定）／音声：端末内蔵の読み上げ機能（追加費用なし）。<br>
     学習データはこの端末のブラウザ内にのみ保存されます。定期的にバックアップを。</p>
     <p class="hint" style="margin-top:8px">
     <b>注意</b>：生成問題はAIによるもので、過去問演習の代替ではなく補助です。誤りを見つけたらフィードバックから報告してください。共通テストは配点の半分がリスニングです。</p>
+    <p class="hint" style="margin-top:8px">
+    <b>v1.01 の変更</b>：読み上げ・効果音の音量調整／リスニングの男女声分け／単語カードの意味・メモ編集／出題範囲にリスニング6形式を追加／「難問」追加。</p>
   </div>
 </section>
 </main>
@@ -467,10 +475,12 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,onboarded:false,sound:true,autoSpeak:true,timer:true},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,vol:1,sfxVol:0.7,onboarded:false,sound:true,autoSpeak:true,timer:true},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
 function migrate(s){
   if(!s.settings.askMode)s.settings.askMode='std';
   if(typeof s.settings.rate!=='number')s.settings.rate=1;
+  if(typeof s.settings.vol!=='number')s.settings.vol=1;
+  if(typeof s.settings.sfxVol!=='number')s.settings.sfxVol=0.7;
   if(typeof s.settings.onboarded!=='boolean')s.settings.onboarded=(s.items.length>0||s.asks.length>0);
   if(typeof s.settings.sound!=='boolean')s.settings.sound=true;
   if(typeof s.settings.autoSpeak!=='boolean')s.settings.autoSpeak=true;
@@ -518,6 +528,8 @@ function last14(){const a=[];for(let i=13;i>=0;i--){const d=addDays(-i);a.push({
 let actx=null;
 function beep(kind){
   if(!S.settings.sound)return;
+  const vol=(typeof S.settings.sfxVol==='number')?S.settings.sfxVol:0.7;
+  if(vol<=0)return;
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC)return;
@@ -534,7 +546,7 @@ function beep(kind){
       o.frequency.value=p[0];
       const t0=now+p[1],t1=t0+p[2];
       g.gain.setValueAtTime(0.0001,t0);
-      g.gain.exponentialRampToValueAtTime(kind==='tap'?0.09:0.16,t0+0.01);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002,(kind==='tap'?0.09:0.16)*vol),t0+0.01);
       g.gain.exponentialRampToValueAtTime(0.0001,t1);
       o.connect(g);g.connect(actx.destination);
       o.start(t0);o.stop(t1+0.02);
@@ -850,7 +862,7 @@ let currentQuiz=null;
 async function genReading(hard){
   hard=!!hard;
   const btn=hard?$('genHardBtn'):$('genBtn');
-  const label=hard?'難問モード':'テストを作成';
+  const label=hard?'難問':'テストを作成';
   $('genBtn').disabled=true;$('genHardBtn').disabled=true;
   btn.textContent='作成中…（'+(hard?'15':'10')+'秒ほど）';
   $('quizErr').hidden=true;$('quiz').innerHTML='';
@@ -1072,6 +1084,7 @@ function speakWord(t){
     const v=pickVoice(0);
     if(v)u.voice=v;
     u.lang='en-US';u.rate=0.9;
+    u.volume=(typeof S.settings.vol==='number')?S.settings.vol:1;
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -1131,33 +1144,87 @@ const SYS_LISTEN=[
 '- 各設問に日本語の解説を付ける。',
 '必ず次のJSONのみを出力:',
 '{"title":"英語タイトル","lines":[{"speaker":"A","text":"英文のセリフ"}],"translationJa":"全体の自然な日本語訳","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説"}],"pointJa":"聞き取りのコツを日本語で1文"}',
-'speakerは A / B / C / Narrator のいずれか。textにはHTMLやMarkdown、話者名を含めない。answerは0〜3。'
+'speakerは A / B / C / Narrator のいずれか。textには話者名・コロン・HTML・Markdownを一切含めない（セリフ本文のみ）。answerは0〜3。',
+'設問や選択肢で話者を指す場合は "the man" / "the woman" ではなく "the first speaker" / "the second speaker" のように順序で表す。'
 ].join('\n');
 
 let voices=[];
 function loadVoices(){try{voices=window.speechSynthesis?speechSynthesis.getVoices()||[]:[]}catch(e){voices=[]}}
 if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-function pickVoice(pref){
+const MALE_V=['alex','aaron','daniel','fred','oliver','arthur','gordon','rishi','reed','eddy','rocko','junior','ralph','tom','male'];
+const FEMALE_V=['samantha','karen','moira','tessa','nicky','victoria','allison','ava','susan','fiona','serena','kate','martha','catherine','flo','sandy','shelley','princess','female'];
+function voiceGender(v){
+  const n=(v.name||'').toLowerCase();
+  if(MALE_V.some(function(x){return n.indexOf(x)>=0}))return 'male';
+  if(FEMALE_V.some(function(x){return n.indexOf(x)>=0}))return 'female';
+  return '';
+}
+function enPool(){
   if(!voices.length)loadVoices();
   const en=voices.filter(function(v){return /^en/i.test(v.lang)});
-  if(!en.length)return null;
+  if(!en.length)return [];
   const us=en.filter(function(v){return /^en[-_]US/i.test(v.lang)});
-  const pool=us.length?us:en;
+  return us.length?us:en;
+}
+function pickVoice(pref){
+  const pool=enPool();
+  if(!pool.length)return null;
   return pool[pref%pool.length];
 }
-function stopSpeak(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
-function speakLines(lines,onEnd){
-  if(!window.speechSynthesis){toast('この端末は音声読み上げに対応していません');return false}
-  stopSpeak();
+function voiceForGender(g){
+  const pool=enPool();
+  if(!pool.length)return null;
+  const m=pool.filter(function(v){return voiceGender(v)===g});
+  if(m.length)return m[0];
+  // 性別が判定できない環境ではピッチで差をつける（下のspeakLines参照）
+  return pool[g==='female'?0:(pool.length>1?1:0)];
+}
+function stripLabel(t){return String(t||'').replace(/^\s*(?:speaker\s*)?[A-Ca-c]\s*[:：]\s*/,'').trim()}
+/* 話者に性別を割り当てる（テスト内で一貫させる） */
+function assignGenders(lines){
   const names=[];
   lines.forEach(function(l){const s=l.speaker||'A';if(names.indexOf(s)<0)names.push(s)});
-  lines.forEach(function(l,i){
-    const u=new SpeechSynthesisUtterance(String(l.text||''));
-    const v=pickVoice(names.indexOf(l.speaker||'A'));
+  const map={};
+  const people=names.filter(function(n){return !/narrator/i.test(n)});
+  let g=Math.random()<0.5?'male':'female';
+  people.forEach(function(n,i){
+    if(i<2){map[n]=(i===0)?g:(g==='male'?'female':'male')}
+    else{map[n]=Math.random()<0.5?'male':'female'}
+  });
+  names.filter(function(n){return /narrator/i.test(n)}).forEach(function(n){map[n]='neutral'});
+  return map;
+}
+/* 表示用ラベル（音声では読み上げない） */
+function genderLabels(map){
+  const out={},cnt={male:0,female:0};
+  Object.keys(map).forEach(function(k){
+    if(map[k]==='neutral'){out[k]='ナレーター';return}
+    cnt[map[k]]++;
+    out[k]=(map[k]==='male'?'男性':'女性');
+  });
+  const tot={male:cnt.male,female:cnt.female};
+  const seen={male:0,female:0};
+  Object.keys(map).forEach(function(k){
+    if(map[k]==='neutral')return;
+    if(tot[map[k]]>1){seen[map[k]]++;out[k]=(map[k]==='male'?'男性':'女性')+seen[map[k]]}
+  });
+  return out;
+}
+function stopSpeak(){try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
+function speakLines(lines,genders){
+  if(!window.speechSynthesis){toast('この端末は音声読み上げに対応していません');return false}
+  stopSpeak();
+  lines.forEach(function(l){
+    const txt=stripLabel(l.text);
+    if(!txt)return;
+    const g=(genders&&genders[l.speaker||'A'])||'neutral';
+    const u=new SpeechSynthesisUtterance(txt);
+    const v=(g==='neutral')?pickVoice(0):voiceForGender(g);
     if(v)u.voice=v;
     u.lang='en-US';
     u.rate=S.settings.rate||1;
-    if(i===lines.length-1&&onEnd)u.onend=onEnd;
+    u.volume=(typeof S.settings.vol==='number')?S.settings.vol:1;
+    u.pitch=(g==='male')?0.82:(g==='female'?1.18:1);
     speechSynthesis.speak(u);
   });
   return true;
@@ -1198,8 +1265,11 @@ async function genListening(){
     const content=await api([{role:'system',content:SYS_LISTEN},{role:'user',content:user}],{json:true,maxTokens:1500,temperature:0.7});
     const q=parseModelJSON(content);
     if(!Array.isArray(q.lines)||!q.lines.length||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
-    q.lines.forEach(function(l){l.text=String(l.text||'').replace(/<\/?[a-zA-Z][^>]*>/g,'')});
-    currentListen={data:q,bucket:bucket,graded:false,plays:0};
+    q.lines.forEach(function(l){l.text=stripLabel(String(l.text||'').replace(/<\/?[a-zA-Z][^>]*>/g,''))});
+    q.lines=q.lines.filter(function(l){return l.text});
+    if(!q.lines.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
+    const genders=assignGenders(q.lines);
+    currentListen={data:q,bucket:bucket,graded:false,plays:0,genders:genders,labels:genderLabels(genders)};
     renderListen();
   }catch(e){$('listenErr').textContent=e.message;$('listenErr').hidden=false}
   finally{btn.disabled=false;btn.textContent='問題を作成'}
@@ -1222,10 +1292,10 @@ function renderListen(){
   h+='<button id="lgradeBtn" class="btn" data-nosound>採点する</button><div id="listenResult"></div>';
   $('listen').innerHTML=h;
   $('playBtn').addEventListener('click',function(){
-    if(speakLines(data.lines)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
   });
   $('replayBtn').addEventListener('click',function(){
-    if(speakLines(data.lines)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
   });
   $('stopBtn').addEventListener('click',stopSpeak);
   document.querySelectorAll('#listen .choice').forEach(function(lb){
@@ -1272,7 +1342,10 @@ function gradeListen(){
   if(S.tests.length>100)S.tests=S.tests.slice(-100);
   touch();save();
   let rh='<div class="card result"><div class="score num">'+score+' / '+data.questions.length+'</div>';
-  rh+='<div class="script">'+data.lines.map(function(l){return '<b>'+esc(l.speaker||'A')+':</b> '+esc(l.text)}).join('<br>')+'</div>';
+  rh+='<div class="script">'+data.lines.map(function(l){
+    const lb=(currentListen.labels&&currentListen.labels[l.speaker||'A'])||'';
+    return (data.lines.length>1&&lb?'<b>'+esc(lb)+'：</b> ':'')+esc(l.text);
+  }).join('<br>')+'</div>';
   if(data.translationJa)rh+='<div class="transJa"><div class="lbl" style="margin-bottom:4px">全文和訳</div>'+nl2html(data.translationJa)+'</div>';
   if(data.pointJa)rh+='<p class="hint">コツ：'+esc(data.pointJa)+'</p>';
   rh+='<button id="lagainBtn" class="btn ghost">もう1題つくる</button></div>';
@@ -1605,7 +1678,23 @@ function renderPrefs(){
     wrap.appendChild(b);
   });
 }
-function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs()}
+function renderVols(){
+  const v=Math.round(((typeof S.settings.vol==='number')?S.settings.vol:1)*100);
+  const s=Math.round(((typeof S.settings.sfxVol==='number')?S.settings.sfxVol:0.7)*100);
+  $('volRange').value=v;$('volVal').textContent=v+'%';
+  $('sfxRange').value=s;$('sfxVal').textContent=s+'%';
+}
+$('volRange').addEventListener('input',function(){
+  S.settings.vol=Number($('volRange').value)/100;
+  $('volVal').textContent=$('volRange').value+'%';
+});
+$('volRange').addEventListener('change',function(){save();speakWord('volume')});
+$('sfxRange').addEventListener('input',function(){
+  S.settings.sfxVol=Number($('sfxRange').value)/100;
+  $('sfxVal').textContent=$('sfxRange').value+'%';
+});
+$('sfxRange').addEventListener('change',function(){save();beep('ok')});
+function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols()}
 $('setSave').addEventListener('click',function(){
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
