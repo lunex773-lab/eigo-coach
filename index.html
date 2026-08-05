@@ -737,12 +737,25 @@ var EC = (function () {
     for (var i = 0; i < S.items.length; i++) if (S.items[i].busKey === key) return S.items[i];
     return null;
   }
-  /* busKey 未設定の既存カードを見出し語で引き当てる（この機能の導入前からあるカードとの重複を防ぐ） */
+  /* key（front|pos）を最後の '|' で分割する。JSUPP.normKey が front + '|' + pos で作るキーに対応 */
+  function splitKey(key) {
+    var i = key.lastIndexOf('|');
+    return { front: key.slice(0, i), pos: key.slice(i + 1) };
+  }
+  /* pos はどちらかが空文字なら任意の品詞にマッチする（AnkiCardは常に空のposで発信するため。決定は Fix B） */
+  function posMatches(a, b) {
+    if (!a || !b) return true;
+    return a === b;
+  }
+  /* busKey 未設定の既存カードを見出し語で引き当てる（この機能の導入前からあるカードとの重複を防ぐ）
+     pos は空側を任意扱いする。両方に品詞があれば一致が必要（record|名 と record|動 は別カードのまま） */
   function findByFront(S, key) {
+    var k = splitKey(key);
     for (var i = 0; i < S.items.length; i++) {
       var it = S.items[i];
       if (it.type !== 'vocab' && it.type !== 'idiom') continue;
-      if (JSUPP.normKey(it.front, it.pos) === key) return it;
+      var ik = splitKey(JSUPP.normKey(it.front, it.pos));
+      if (ik.front === k.front && posMatches(k.pos, ik.pos)) return it;
     }
     return null;
   }
@@ -750,12 +763,26 @@ var EC = (function () {
   function makeHandlers(S, todayStr, addDays) {
     if (!S.busDeleted) S.busDeleted = [];
     return {
-      hasCard: function (k) { return !!findByBusKey(S, k); },
+      /* busKey が既に付いているカードだけを「採用済み」として数える（ワイルドカード
+         解決は使うが、見出し語一致だけでは真とみなさない）。そうしないと、
+         busKey未設定の同一カードが2つのキー（例: abandon| と abandon|動）の
+         どちらからも「未採用」に見え、addCard の findByFront 採用が毎回同じ
+         カードを引き当て直すだけで busKey が定着せず、updateCard に一生到達
+         しない（Fix2）。legacy（busKey無し）カードは resolve で見つかっても
+         busKeyが無いので false のまま → addCard 経路（内容保持）に落ちる。 */
+      hasCard: function (k) { var it = resolve(S, k); return !!(it && it.busKey); },
       isDeleted: function (k) { return S.busDeleted.indexOf(k) >= 0; },
       needsUpdate: function (k, b) { var it = resolve(S, k); return !!it && b.rev > (it.busRev || 0); },
       addCard: function (k, b) {
         var ex = findByFront(S, k);
-        if (ex) { ex.busKey = k; ex.busRev = b.rev; return; }   /* 既存カードを採用。箱と進捗は保つ */
+        if (ex) {
+          ex.busKey = k; ex.busRev = b.rev;
+          /* 採用は補完のみ・上書きはしない。品詞やメモが未設定のローカルカードを、
+             品詞/メモ入りのバスエントリが採用するときだけ埋める（Fix3）。 */
+          if (b.pos && !ex.pos) ex.pos = b.pos;
+          if (b.note && !ex.note) ex.note = b.note;
+          return;   /* 既存カードを採用。箱と進捗は保つ */
+        }
         S.items.push(itemFromBus(k, b, todayStr, addDays));
       },
       updateCard: function (k, b) {
@@ -1397,8 +1424,7 @@ function startCards(){
 }
 function endSession(){
   const s=session;
-  if(!s||s._done||!s.clk||!s.res||!s.res.length)return;
-  s._done=true;
+  if(!s||!s.clk||!s.res||!s.res.length)return;
   const sec=s.clk.stop();
   let ok=0;for(let i=0;i<s.res.length;i++)if(s.res[i])ok++;
   try{
@@ -1407,6 +1433,18 @@ function endSession(){
     startedAt:s.startedAt,seconds:sec,asked:s.res.length,correct:ok});
    JSUPP.masteryBump('英語','単語・熟語',s.res);
   }catch(e){}
+  /* 再アーム：発信済みの区間をクリアして同じセッションを続行可能にする。
+     hidden での自動flush後にユーザーが復帰して採点を続けても、それは
+     「同じセッションの第2区間」として積み直され、次のflush/終了で改めて
+     発信される。study-manager は (app, subject, date) で日次レコードを
+     マージするため、区間が分かれても同じ日の同じ行に合算される。
+     直後に空の状態でendSession()が再度呼ばれても、s.res.lengthが0なので
+     冒頭のガードで早期returnし、二重計上は起きない
+     （終了/中断ボタンの連打対策も同じガードで兼ねる）。 */
+  s.res=[];
+  s.startedAt=new Date().toISOString();
+  s.date=todayStr();
+  try{s.clk=JSUPP.makeClock();s.clk.start();}catch(e){s.clk=null;}
 }
 let cardTimer=null,cardLeft=0;
 function clearCardTimer(){if(cardTimer){clearInterval(cardTimer);cardTimer=null}}
@@ -1970,6 +2008,12 @@ function renderRec(){
         if(!b){toast('意味を入力してください');return}
         it.back=b;
         it.note=(ed.querySelector('.edNote').value||'').trim();
+        if(it.type==='vocab'||it.type==='idiom'){
+         try{
+          const _k=JSUPP.vocabPutCard(it.front,it.back,it.note,it.pos,EC.APP);
+          if(_k){it.busKey=_k;it.busRev=(JSUPP.readVocab().cards[_k]||{}).rev||1;}
+         }catch(e){}
+        }
         save();toast('保存しました');renderRec();renderCardStatus();
       });
       ed.querySelectorAll('.tgl').forEach(function(tb){
@@ -2023,7 +2067,11 @@ $('impApply').addEventListener('click',async function(){
   if(!obj||obj.app!=='eigo-coach'||!obj.data){toast('このアプリのバックアップではありません');return}
   const yes=await confirmBox('現在のデータを消して、貼り付けた内容で復元します。よろしいですか？');
   if(!yes)return;
+  const _old=(S.busDeleted||[]).slice();
   S=migrate(Object.assign(fresh(),obj.data));
+  /* バックアップに busDeleted が無くても、復元前のトゥームストーンは失わない。
+     さもないと次回起動時にバスから削除済みカードが再流入する（setReset と同じ理由・同じやり方） */
+  S.busDeleted=_old.concat(S.busDeleted||[]).filter(function(k,i,a){return k&&a.indexOf(k)===i;});
   save();renderRec();renderCardStatus();toast('復元しました');
 });
 
@@ -2147,7 +2195,23 @@ if(!S.settings.onboarded){
 }
 document.addEventListener('visibilitychange',function(){
  if(!session||!session.clk)return;
- if(document.hidden)session.clk.pause();else session.clk.resume();
+ /* hidden になった時点でその場までの学習時間を確定させる。iPhoneでホーム画面の
+    Webアプリをスワイプで閉じると hidden の直後にページごと破棄されるため、
+    endSession() を呼ばずに pause() だけしていると加算済みの秒数ごと消える。
+    endSession() 自身が再アームする（新しい区間として仕切り直す）ので、
+    タブ切替など破棄されない場合に復帰して採点を続けても、その分は
+    続きの区間として次のflush/終了時に記録される。 */
+ if(document.hidden){
+  session.clk.pause();try{endSession();}catch(e){}
+  /* endSession() が張り直した時計は start() 済みで、非表示のまま背景時間を数え始める。
+     復帰時の resume() は last が非nullだと何もしないため、ここで止めないと
+     離席していた時間が最大2分ぶん次の区間へ計上される。 */
+  if(session&&session.clk)session.clk.pause();
+ }
+ else session.clk.resume();
+});
+window.addEventListener('pagehide',function(){
+ try{endSession();}catch(e){}
 });
 </script>
 </body>
