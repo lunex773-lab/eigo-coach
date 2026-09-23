@@ -15,6 +15,7 @@
   color-scheme:light;
   --page:#f5f5f7; --surface:#ffffff; --raise:#fbfbfd;
   --ink:#1d1d1f; --ink2:#3c3c43; --muted:#6e6e73; --faint:#8e8e93;
+  --seg-off:#515156; /* 切替の非選択の文字（灰色の溝の上でも 4.5:1 以上） */
   --line:rgba(60,60,67,.12); --line2:rgba(60,60,67,.20);
   --fill:rgba(120,120,128,.10); --fill2:rgba(120,120,128,.18);
   --grid:#e6e6e3; --axis:#c7c7c2;
@@ -29,12 +30,13 @@
     color-scheme:dark;
     --page:#0f0f10; --surface:#1a1a1b; --raise:#202022;
     --ink:#f5f5f7; --ink2:#d1d1d6; --muted:#a1a1a6; --faint:#8e8e93;
+    --seg-off:#a1a1a6;
     --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18);
     --fill:rgba(255,255,255,.06); --fill2:rgba(255,255,255,.12);
     --grid:#2c2c2a; --axis:#3a3a38;
     --data:#3987e5;
     --h1:#1b3a63; --h2:#1c5cab; --h3:#256abf; --h4:#3987e5; --h5:#6da7ec; --h6:#b7d3f6;
-    --crit:#e66767; --good:#0ca30c;
+    --crit:#ff7b7b; --good:#0ca30c; /* 選択行の明るい背景の上でも 4.5:1 以上 */
     --focus:#6da7ec;
   }
 }
@@ -69,9 +71,11 @@ button{cursor:pointer}
 
 /* ---- 絞り込み（すべての表示に効く） ---- */
 .filters{position:sticky;top:0;z-index:5;background:var(--page);padding:8px 0 10px;display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
-.seg{display:inline-flex;background:var(--fill);border-radius:999px;padding:2px}
-.seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--ink2)}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* 選択中は白黒反転（文字の明るさだけに頼らない。接続ボタン .btn.primary と同じ作法） */
+.seg{display:inline-flex;background:var(--fill);border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;color:var(--seg-off);transition:background-color .15s,color .15s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--page);font-weight:700}
 .chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer}
 .chk input{width:16px;height:16px;accent-color:var(--ink);margin:0}
 
@@ -93,7 +97,7 @@ h2{font-size:16px;line-height:1.35;margin:0;font-weight:700}
 .block{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px;min-width:0}
 .bh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .bh .note{font-size:12px;color:var(--muted)}
-.linkbtn{border:0;background:none;color:var(--ink2);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:2px 0}
+.linkbtn{border:0;background:none;color:var(--ink2);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:5px 0}
 .empty{color:var(--muted);padding:18px 0;text-align:center}
 .grid2{display:grid;grid-template-columns:1fr;gap:0 14px}
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
@@ -129,18 +133,35 @@ h2{font-size:16px;line-height:1.35;margin:0;font-weight:700}
 .mult .ml{font-size:12px;font-weight:600;color:var(--ink2)}
 .mult .mv{font-size:12px;color:var(--muted);text-align:right}
 
-/* 表 */
-.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
-table{border-collapse:collapse;width:100%;font-size:13px}
+/* 表（横スクロール）
+   スクロール枠はカードの内側の端いっぱい（左右 -16px）に広げ、余白は端の列のセルに持たせる。
+   枠に padding を持たせると、固定した1列目が枠の端から16px内側で止まり、その隙間から流れる中身が透ける。
+   境界線は separate（collapse だと固定セルの線が表に属し、Safari でスクロール時に欠ける）。 */
+.tscroll{position:relative;margin:0 -16px}
+/* 止まる位置は列の頭（1列目のすぐ右）に吸着させる。途中で止まると潜りかけの文字の切れ端が残って崩れて見えるため。
+   1列目の幅は scroller() が scroll-padding-left に入れる */
+.tablewrap{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.tablewrap thead th{scroll-snap-align:start}
+.tscroll::after{content:"";position:absolute;top:0;bottom:0;right:0;width:28px;pointer-events:none;opacity:0;transition:opacity .15s;
+  background:linear-gradient(to right,transparent,var(--surface))}
+.tscroll.more::after{opacity:1} /* まだ右に列があることを示す */
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;white-space:nowrap;border-bottom:1px solid var(--line2)}
 td{padding:8px 10px;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{padding-left:16px}
+th:last-child,td:last-child{padding-right:16px}
 td.r,th.r{text-align:right}
 tr:last-child td{border-bottom:0}
 tbody tr.click{cursor:pointer}
 tbody tr.click:hover td{background:var(--fill)}
 tbody tr.sel td{background:var(--fill2)}
-.sticky1{position:sticky;left:0;background:var(--surface);z-index:1}
-tbody tr.click:hover td.sticky1{background:var(--raise)}
+/* 固定する1列目。下を列が流れるので背景は必ず不透明（選択・ホバーの色も面の色に重ねて不透明にする） */
+.sticky1{position:sticky;left:0;z-index:1;background:var(--surface)}
+thead .sticky1{z-index:2}
+tbody tr.click:hover td.sticky1{background:linear-gradient(var(--fill),var(--fill)),var(--surface)}
+tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),var(--surface)}
+/* 下に潜っていることを示す：区切り線＋右側に面の色のぼかし（潜りかけの文字を急に切らずに消す） */
+.tscroll.scrolled .sticky1{box-shadow:1px 0 0 var(--line2),14px 0 12px -6px var(--surface)}
 .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--fill2);color:var(--ink2);margin-left:6px;vertical-align:1px}
 
 /* 正答率の横棒 */
@@ -235,7 +256,7 @@ tbody tr.click:hover td.sticky1{background:var(--raise)}
         <button class="linkbtn" data-table="heat">表で見る</button>
       </div>
       <div id="heat"></div>
-      <div id="heat-table" class="tablewrap" hidden></div>
+      <div id="heat-table" hidden></div>
     </section>
 
     <div class="grid2">
@@ -245,7 +266,7 @@ tbody tr.click:hover td.sticky1{background:var(--raise)}
           <button class="linkbtn" data-table="dau">表で見る</button>
         </div>
         <div id="dau"></div>
-        <div id="dau-table" class="tablewrap" hidden></div>
+        <div id="dau-table" hidden></div>
       </section>
       <section class="block">
         <div class="bh">
@@ -444,6 +465,25 @@ function hover(el, fn) {
 }
 window.addEventListener('scroll', hideTip, { passive: true });
 
+/* ================= 横スクロールする表 =================
+   .scrolled … 左に流れている（固定した1列目に影を付け、下に潜っていると分かるように）
+   .more     … まだ右に列がある（右端を暗くして、横に動かせると分かるように） */
+function scroller(table) {
+  const inner = h('div', { class: 'tablewrap' }, table);
+  const outer = h('div', { class: 'tscroll' }, inner);
+  const update = () => {
+    const first = table.querySelector('thead th.sticky1');
+    inner.style.scrollPaddingLeft = first ? first.offsetWidth + 'px' : '';
+    const max = inner.scrollWidth - inner.clientWidth;
+    outer.classList.toggle('scrolled', inner.scrollLeft > 0);
+    outer.classList.toggle('more', max > 1 && inner.scrollLeft < max - 1);
+  };
+  inner.addEventListener('scroll', () => { hideTip(); update(); }, { passive: true });
+  new ResizeObserver(update).observe(inner); // 表示された時・画面幅が変わった時にも判定し直す
+  setTimeout(update, 0); // 差し込んだ直後にも1回（ResizeObserver は画面が描画されるまで呼ばれないため）
+  return outer;
+}
+
 /* ================= 描画 ================= */
 function renderKpis(k) {
   const tile = (label, value, sub) => h('div', { class: 'kpi' }, h('div', { class: 'l' }, label), h('div', { class: 'v' }, value), h('div', { class: 's' }, sub));
@@ -476,7 +516,7 @@ function renderHeat(d) {
     for (let hr = 0; hr < 24; hr++) {
       const v = map[f + ':' + hr] || 0;
       tot += v;
-      const c = h('div', { class: 'c', tabindex: v ? '0' : null });
+      const c = h('div', { class: 'c', tabindex: v ? '0' : null, role: v ? 'img' : null, 'aria-label': v ? label + '・' + hr + '時台・' + metricLabel(v) : null });
       const s = step(v);
       if (s) c.style.background = 'var(--h' + s + ')';
       hover(c, () => [metricLabel(v), label + '・' + hr + '時台']);
@@ -499,7 +539,7 @@ function renderHeat(d) {
   }
   const hdr = h('tr', null, h('th', { class: 'sticky1' }, '機能'), h('th', { class: 'r' }, '合計'));
   for (let hr = 0; hr < 24; hr++) hdr.append(h('th', { class: 'r' }, hr + '時'));
-  $('heat-table').replaceChildren(h('table', null, h('thead', null, hdr), tb), key === 'sec' ? h('p', { class: 'muted small' }, '時間帯の列は分') : null);
+  $('heat-table').replaceChildren(scroller(h('table', null, h('thead', null, hdr), tb)), key === 'sec' ? h('p', { class: 'muted small' }, '時間帯の列は分') : null);
 }
 
 /* 縦棒（1系列）。幅は描画時の実寸に合わせる（文字が縮まないように） */
@@ -522,7 +562,7 @@ function columns(el, days, values, opts) {
     const v = values[i] || 0;
     const x = padL + i * slot + (slot - bw) / 2;
     const bh = (v / top) * plotH;
-    const g = sv('g', { tabindex: v ? '0' : null });
+    const g = sv('g', { tabindex: v ? '0' : null, role: v ? 'img' : null, 'aria-label': v ? shortDay(day) + '・' + opts.fmtTip(v) : null });
     const hit = sv('rect', { class: 'hit', x: padL + i * slot, y: padT, width: slot, height: plotH + padB });
     g.append(hit);
     if (bh > 0) {
@@ -555,7 +595,7 @@ function renderDau(d) {
   if (!vals.some(Boolean)) { el.replaceChildren(h('div', { class: 'empty' }, 'この期間のデータはまだありません')); $('dau-table').replaceChildren(); return; }
   columns(el, days, vals, { height: 170, axis: true, label: '日ごとの利用者数', fmtAxis: (v) => fmtInt(v), fmtTip: (v) => v + '人' });
   const tb = h('tbody', null, days.slice().reverse().map((x, i) => h('tr', null, h('td', null, shortDay(x)), h('td', { class: 'r num' }, (vals[days.length - 1 - i]) + '人'))));
-  $('dau-table').replaceChildren(h('table', null, h('thead', null, h('tr', null, h('th', null, '日付'), h('th', { class: 'r' }, '利用者'))), tb));
+  $('dau-table').replaceChildren(scroller(h('table', null, h('thead', null, h('tr', null, h('th', null, '日付'), h('th', { class: 'r' }, '利用者'))), tb)));
 }
 
 /* 機能ごとの小さな棒グラフ。機能ごとに縦軸は別（最大値を右に明記） */
@@ -599,7 +639,7 @@ function renderUsers(d) {
     tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     tb.append(tr);
   }
-  $('users').replaceChildren(h('div', { class: 'tablewrap' }, h('table', null, h('thead', null, head), tb)));
+  $('users').replaceChildren(scroller(h('table', null, h('thead', null, head), tb)));
 }
 
 /* 1人分の時系列 */
@@ -691,7 +731,7 @@ function renderAi(d) {
     h('td', { class: 'r num' }, fmtInt(r.calls)), h('td', { class: 'r num' }, r.avgMs == null ? '-' : (r.avgMs / 1000).toFixed(1) + '秒'),
     h('td', { class: 'r num' }, fmtInt(r.tokIn)), h('td', { class: 'r num' }, fmtInt(r.tokOut)), h('td', { class: 'r num' }, fmtInt(r.tokReason)),
     h('td', { class: 'r num' }, fmtYen(r.cost)), h('td', { class: 'r num' }, r.errs ? h('span', { class: 'err' }, '✕ ' + r.errs) : '0'))));
-  $('ai').replaceChildren(h('div', { class: 'tablewrap' }, h('table', null, h('thead', null, head), tb)));
+  $('ai').replaceChildren(scroller(h('table', null, h('thead', null, head), tb)));
 }
 
 function renderErrors(d) {
