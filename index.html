@@ -453,13 +453,19 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
     <p class="hint" style="margin-top:6px">読み上げの音量は端末の音量ボタンとも連動します。マナーモードでは鳴らない場合があります。</p>
   </div>
   <div class="card">
+    <div class="lbl">利用データ</div>
+    <p class="hint" style="margin:6px 0 2px">使い方の記録（機能・時間帯・回数・点数、質問文とAIの回答）を開発者に送り、改善に使います。名前など個人を特定する情報は送りません。保存期間の期限は設けていません（削除の依頼はフィードバックから）。</p>
+    <div id="anaChips" class="chips" style="margin:10px 0 2px"></div>
+    <p id="anaId" class="hint num" style="margin-top:6px"></p>
+  </div>
+  <div class="card">
     <div class="lbl">接続設定</div>
     <p class="hint" style="margin:6px 0 2px">通信に必要な設定。通常は触る必要はありません。</p>
     <button id="connToggle" class="btn ghost">接続設定を開く</button>
     <div id="connBox" hidden>
       <label class="flbl" for="setUrl">Worker URL</label>
       <input type="text" id="setUrl" placeholder="https://xxxx.workers.dev" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <label class="flbl" for="setKey">合言葉（APP_KEY・任意）</label>
+      <label class="flbl" for="setKey">合言葉（任意）</label>
       <input type="text" id="setKey" placeholder="Workerに設定した合言葉" autocapitalize="off" autocorrect="off" spellcheck="false">
       <div class="btnrow">
         <button id="setSave" class="btn">保存</button>
@@ -482,19 +488,19 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
   </div>
   <div class="card">
     <div class="lbl">フィードバック</div>
-    <p class="hint" style="margin:6px 0 2px">不具合・改善案を開発者に送ります（匿名・学習データは送信されません）。</p>
+    <p class="hint" style="margin:6px 0 2px">不具合・改善案を開発者に送ります（匿名）。</p>
     <textarea id="fbText" rows="3" placeholder="例：分野4の表が崩れていた／こんな機能が欲しい"></textarea>
     <button id="fbSend" class="btn">送信</button>
     <div id="fbOut" class="hint" style="margin-top:8px"></div>
   </div>
   <div class="card">
     <div class="lbl">データ</div>
-    <p class="hint">データはこの端末のブラウザ内（localStorage）のみに保存されます。定期的に「記録 → バックアップ」で書き出してください。</p>
+    <p class="hint">学習データ（カード・成績・履歴）はこの端末のブラウザ内（localStorage）に保存されます。定期的に「記録 → バックアップ」で書き出してください。</p>
     <button id="setReset" class="btn danger">全データを初期化</button>
   </div>
   <div class="card">
     <div class="lbl">このアプリについて</div>
-    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach <b>v1.01</b>）<br>
+    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach <b>v1.1</b>）<br>
     質問した内容が自動でカードになり、弱点を織り込んだテストが生成される自分専用の英語学習ツール。</p>
     <p class="hint" style="margin-top:8px">
     ・<b>質問</b>：単語・英熟語モードは語源と語構成から解説。英文解説モードは構造・文法根拠・和訳まで（コマンド対応）。<br>
@@ -502,10 +508,12 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
     ・<b>リスニング</b>：6形式を生成。対話では話者ごとに男女の声を割り当てて聞き分けを訓練（速度0.75〜1.25倍）。<br>
     ・<b>単語</b>：品詞・タグで絞り込み、赤シート式・5箱の間隔反復。発音の読み上げと5秒タイマー付き。</p>
     <p class="hint" style="margin-top:8px">
-    モデル：gpt-4o-mini（Worker側で固定）／音声：端末内蔵の読み上げ機能（追加費用なし）。<br>
-    学習データはこの端末のブラウザ内にのみ保存されます。定期的にバックアップを。</p>
+    AI：OpenAI（モデルはWorker側で固定）／音声：端末内蔵の読み上げ機能（追加費用なし）。<br>
+    学習データはこの端末のブラウザ内に保存されます。定期的にバックアップを。使い方の記録については上の「利用データ」を参照。</p>
     <p class="hint" style="margin-top:8px">
     <b>注意</b>：生成問題はAIによるもので、過去問演習の代替ではなく補助です。誤りを見つけたらフィードバックから報告してください。共通テストは配点の半分がリスニングです。</p>
+    <p class="hint" style="margin-top:8px">
+    <b>v1.1 の変更</b>：新しいAIモデルに対応／AIの出力が途中で切れた時の表示を改善／利用状況の記録（設定でオフにできます）。</p>
     <p class="hint" style="margin-top:8px">
     <b>v1.01 の変更</b>：読み上げ・効果音の音量調整／リスニングの男女声分け／単語カードの意味・メモ編集／出題範囲にリスニング6形式を追加／「難問」追加。</p>
   </div>
@@ -527,8 +535,23 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
     <div class="obrow"><b>1. 質問する</b>単語・熟語は語源から、英文は構造から解説。学んだ内容は自動でカードになります。</div>
     <div class="obrow"><b>2. テストされる</b>あなたの弱点を織り込んだ読解・リスニング・単語テストを自動生成。質問していない分野も抜き打ちで出ます。</div>
     <div class="obrow"><b>3. 記録が残る</b>間違えた語ほど頻繁に、覚えた語は間隔をあけて再出題。継続日数も記録されます。</div>
-    <p class="hint" style="margin:10px 0 0">データはこの端末にのみ保存されます。「記録 → バックアップ」で定期的に書き出してください。</p>
+    <p class="hint" style="margin:10px 0 0">学習データはこの端末に保存されます。「記録 → バックアップ」で定期的に書き出してください。</p>
     <button id="obDone" class="btn" style="margin-top:12px">始める</button>
+  </div>
+</div>
+<div id="notice" class="modal" hidden>
+  <div class="mbox">
+    <h2 style="font-size:17px;margin:0 0 10px">利用状況の記録について</h2>
+    <p class="hint" style="margin:0 0 12px">アプリの改善のため、使い方の記録を開発者に送ります。</p>
+    <div class="obrow"><b>送るもの</b>使った機能・時間帯・回数・点数、質問文とAIの回答</div>
+    <div class="obrow"><b>送らないもの</b>名前やメールなど、あなたを特定できる情報。端末ごとのランダムな番号で区別します</div>
+    <div class="obrow"><b>保存期間</b>期限は設けていません。消してほしい時は、「設定」に出る端末の番号を添えてフィードバックから連絡してください</div>
+    <div class="obrow"><b>止め方</b>「設定」の「利用データを送る」でいつでも止められます。止めても、費用管理のためAIを使った回数だけは記録されます</div>
+    <p class="hint" style="margin:0">質問欄には個人情報を書かないでください。</p>
+    <div class="btnrow" style="margin-top:12px">
+      <button id="noticeNo" class="btn ghost">送らずに使う</button>
+      <button id="noticeOk" class="btn">OK</button>
+    </div>
   </div>
 </div>
 <div id="modal" class="modal" hidden>
@@ -796,9 +819,130 @@ var EC = (function () {
            gradeItem: gradeItem, makeHandlers: makeHandlers };
 })();
 /* === jsupp-adapter:end === */
+/* === eigo-analytics:start === */
+/* 利用状況の記録。DOM と通信には触れない（送信手段は外から渡す）ので sandbox でテストできる。
+   端末内のキューに貯め、20件ごと、またはアプリを閉じる瞬間（sendBeacon）にまとめて送る。
+   送ってよい状態（告知を確認済み・オン・接続設定あり）になるまでは送らずに貯めておく。 */
+var EA = (function () {
+  'use strict';
+  var UID_KEY = 'eigo-coach:uid', Q_KEY = 'eigo-coach:evq';
+  var Q_MAX = 500;       // 端末内に貯める上限（超えたら古い順に捨てる）
+  var BATCH = 20;        // これだけ貯まったら送る
+  var SEND_MAX = 100;    // 1回に送る上限（Worker 側の上限と同じ）
+  var MAX_BODY = 16000;  // 1回の本文の文字数上限。sendBeacon は約64KBまでで、日本語はUTF-8で3バイトになるため
+  var D_MAX = 1500;      // 1件の詳細(d)の上限
+  var IDLE_CAP_MS = 120000;
+
+  function rid(rand, n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += Math.floor(rand() * 36).toString(36);
+    return s;
+  }
+
+  function create(o) {
+    var st = o.storage;
+    var uid = null;
+    try { uid = st.getItem(UID_KEY); } catch (e) {}
+    if (!/^u_[a-z0-9]{6,16}$/.test(uid || '')) {
+      uid = 'u_' + rid(o.rand, 10);
+      try { st.setItem(UID_KEY, uid); } catch (e) {}
+    }
+    var sid = 's_' + rid(o.rand, 8);
+    var inflight = 0; // キュー先頭のうち、いま送信中の件数
+
+    function load() {
+      try { var q = JSON.parse(st.getItem(Q_KEY) || '[]'); return Array.isArray(q) ? q : []; } catch (e) { return []; }
+    }
+    function store(q) { try { st.setItem(Q_KEY, JSON.stringify(q)); } catch (e) {} }
+    function body(evs) {
+      var c = o.config();
+      return JSON.stringify({ k: c.key, uid: uid, sid: sid, app: c.app, events: evs });
+    }
+    /* 先頭から、件数と本文の長さの両方の上限に収まる分だけ取る */
+    function take(q) {
+      var out = [], len = 200;
+      for (var i = 0; i < q.length && out.length < SEND_MAX; i++) {
+        var s = JSON.stringify(q[i]).length + 1;
+        if (out.length && len + s > MAX_BODY) break;
+        out.push(q[i]);
+        len += s;
+      }
+      return out;
+    }
+
+    function track(kind, feature, n, d) {
+      if (d != null && JSON.stringify(d).length > D_MAX) d = { _truncated: true };
+      var q = load();
+      q.push({ t: o.now(), kind: kind, feature: feature || null, n: (typeof n === 'number' && isFinite(n)) ? n : null, d: d == null ? null : d });
+      if (q.length > Q_MAX) {
+        var drop = q.length - Q_MAX;
+        q = q.slice(drop);
+        inflight = Math.max(0, inflight - drop);
+      }
+      store(q);
+      if (q.length - inflight >= BATCH) flush();
+    }
+
+    function flush() {
+      if (inflight || !o.canSend()) return Promise.resolve(false);
+      var q = load();
+      if (!q.length) return Promise.resolve(true);
+      var batch = take(q);
+      inflight = batch.length;
+      var p;
+      try { p = Promise.resolve(o.send(body(batch))); } catch (e) { p = Promise.resolve(false); }
+      return p.then(function (ok) {
+        if (ok) store(load().slice(inflight)); // 送信中に beacon で後ろが送られていても、先頭の送信済み分だけを消す
+        inflight = 0;
+        return !!ok;
+      }, function () { inflight = 0; return false; });
+    }
+
+    /* アプリを閉じる瞬間用。送信中の分は含めない（二重送信の防止） */
+    function flushBeacon() {
+      if (!o.canSend()) return false;
+      var q = load();
+      var rest = q.slice(inflight);
+      if (!rest.length) return true;
+      var batch = take(rest);
+      var ok = false;
+      try { ok = !!o.beacon(body(batch)); } catch (e) {}
+      if (ok) store(q.slice(0, inflight).concat(rest.slice(batch.length)));
+      return ok;
+    }
+
+    function clear() { inflight = 0; store([]); }
+
+    return { uid: uid, sid: sid, track: track, flush: flush, flushBeacon: flushBeacon, clear: clear,
+             size: function () { return load().length; } };
+  }
+
+  /* 画面（機能）ごとの滞在時間。操作の間が2分を超えたら2分で打ち切る（JSUPP.makeClock と同じ考え方） */
+  function makeDwell(now) {
+    var cur = null, acc = 0, last = 0;
+    function tick() { var t = now(); acc += Math.max(0, Math.min(t - last, IDLE_CAP_MS)); last = t; }
+    function stop() {
+      if (!cur) return null;
+      tick();
+      var r = { feature: cur, sec: Math.round(acc / 1000) };
+      cur = null; acc = 0;
+      return r;
+    }
+    return {
+      start: function (feature) { var prev = stop(); cur = feature || null; acc = 0; last = now(); return prev; },
+      touch: function () { if (cur) tick(); },
+      stop: stop,
+      current: function () { return cur; }
+    };
+  }
+
+  return { create: create, makeDwell: makeDwell, UID_KEY: UID_KEY, Q_KEY: Q_KEY };
+})();
+/* === eigo-analytics:end === */
 const LS='eigo-coach:v1';
 const INTERVALS=EC.INTERVALS; // ライトナー箱→次回まで日数
-const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算
+const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算。v1.1 以降は Worker が返す cost_usd を積算し、これは旧Worker・旧データの換算にだけ使う
+const APP_VER='eigo-coach 1.1';
 const TYPES={vocab:'単語',idiom:'熟語',grammar:'文法',reading:'読解'};
 const BUCKETS=[
  {id:1,name:'掲示・案内・広告',desc:'ポスターやお知らせから必要な情報を探す',fmt:'掲示物・ポスター形式。タイトル行＋日時・場所・料金・申込方法・注意事項を短い行で並べる。物語にしない。'},
@@ -824,8 +968,14 @@ const BUCKETS=[
 ];
 
 /* ================= 状態 ================= */
-function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,vol:1,sfxVol:0.7,onboarded:false,sound:true,autoSpeak:true,timer:true},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0}}}
+function fresh(){return {v:1,settings:{workerUrl:'',appKey:'',askMode:'std',rate:1,vol:1,sfxVol:0.7,onboarded:false,sound:true,autoSpeak:true,timer:true,analytics:true,noticeV:0},items:[],buckets:{},lbuckets:{},tests:[],asks:[],askTotal:0,cardStats:{a:0,c:0},listenStats:{a:0,c:0},days:{},streak:{cur:0,best:0,last:''},tagDefs:[],usage:{in:0,out:0,calls:0,usd:0}}}
 function migrate(s){
+  /* 利用データの送信（既定オン）と告知の確認版数。告知を確認するまでは送らない */
+  if(typeof s.settings.analytics!=='boolean')s.settings.analytics=true;
+  if(typeof s.settings.noticeV!=='number')s.settings.noticeV=0;
+  if(!s.usage||typeof s.usage.in!=='number')s.usage={in:0,out:0,calls:0};
+  /* 費用は v1.1 から Worker の実額（モデル別単価）を積算する。それ以前の分は当時のモデル(gpt-4o-mini)の単価で換算 */
+  if(typeof s.usage.usd!=='number')s.usage.usd=(s.usage.in*PRICE.inPerM+s.usage.out*PRICE.outPerM)/1e6;
   if(!s.settings.askMode)s.settings.askMode='std';
   if(typeof s.settings.rate!=='number')s.settings.rate=1;
   if(typeof s.settings.vol!=='number')s.settings.vol=1;
@@ -855,6 +1005,36 @@ try{
  if(_r.added||_r.updated||_r.graded)save();
 }catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('保存できません（プレビュー環境では動きません。GitHub Pagesで開いてください）')}}
+
+/* ================= 利用状況の記録 ================= */
+/* Worker のURL（末尾の / を除く）。チャット・フィードバック・利用記録で共用 */
+function workerBase(){
+  let url=(S.settings.workerUrl||'').trim();
+  if(!url)return '';
+  if(!/^https?:\/\//.test(url))url='https://'+url;
+  return url.replace(/\/+$/,'');
+}
+/* 送ってよいのは「オン」かつ「告知を確認済み」かつ「接続設定あり」の時だけ */
+function canSendAnalytics(){return !!(S.settings.analytics&&S.settings.noticeV>=1&&workerBase())}
+function rnd(){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296}catch(e){return Math.random()}}
+const AN=EA.create({
+  storage:localStorage,now:Date.now,rand:rnd,canSend:canSendAnalytics,
+  config:function(){return {key:S.settings.appKey||'',app:APP_VER}},
+  /* text/plain で送る＝CORSの事前確認が要らない（Worker の /events はこれを受ける） */
+  send:function(b){return fetch(workerBase()+'/events',{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:b,keepalive:true}).then(function(r){return r.ok}).catch(function(){return false})},
+  beacon:function(b){return !!(navigator.sendBeacon&&navigator.sendBeacon(workerBase()+'/events',new Blob([b],{type:'text/plain;charset=UTF-8'})))}
+});
+/* 記録の失敗でアプリを止めない */
+function track(kind,feature,n,d){try{AN.track(kind,feature,n,d)}catch(e){}}
+/* 画面＝機能ごとの滞在時間（dwell）と、前面で使っていた時間（fg）。操作の間が2分を超えた分は数えない */
+let curTab='tab-ask',testMode='reading';
+function screenFeature(){return curTab==='tab-ask'?'ask':curTab==='tab-test'?testMode:curTab==='tab-rec'?'records':'settings'}
+const FG=EA.makeDwell(Date.now),DW=EA.makeDwell(Date.now);
+function moveDwell(){const p=DW.start(screenFeature());if(p&&p.sec>0)track('dwell',p.feature,p.sec)}
+function closeDwell(){
+  const p=DW.stop();if(p&&p.sec>0)track('dwell',p.feature,p.sec);
+  const f=FG.stop();if(f&&f.sec>0)track('fg',null,f.sec);
+}
 
 /* ================= ユーティリティ ================= */
 const $=id=>document.getElementById(id);
@@ -948,13 +1128,14 @@ function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 /* ================= API ================= */
 async function api(messages,opt){
   opt=opt||{};
-  let url=(S.settings.workerUrl||'').trim();
+  const url=workerBase();
   if(!url){switchTab('tab-set');throw new Error('設定でWorker URLを入力してください')}
-  if(!/^https?:\/\//.test(url))url='https://'+url;
   const headers={'Content-Type':'application/json'};
   if(S.settings.appKey)headers['x-app-key']=S.settings.appKey;
   const body={messages:messages,max_tokens:opt.maxTokens||900,temperature:(typeof opt.temperature==='number')?opt.temperature:0.4};
   if(opt.json!==false)body.response_format={type:'json_object'};
+  /* 記録用の付帯情報。Worker はこれを OpenAI へは送らない。noText=true なら質問文と回答を保存させない */
+  body.meta={feature:opt.feature||'other',uid:AN.uid,sid:AN.sid,app:APP_VER,noText:!canSendAnalytics()};
   let res,data;
   try{res=await fetch(url,{method:'POST',headers:headers,body:JSON.stringify(body)})}
   catch(e){throw new Error('接続できません。Worker URLと通信環境を確認してください。')}
@@ -963,15 +1144,25 @@ async function api(messages,opt){
     const m=data.error&&(data.error.message||data.error);
     throw new Error(typeof m==='string'?m:('エラー HTTP '+res.status));
   }
-  if(data.usage){S.usage.in+=data.usage.prompt_tokens||0;S.usage.out+=data.usage.completion_tokens||0;S.usage.calls++;save()}
-  const c=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content;
-  if(!c)throw new Error('応答が空でした。もう一度試してください。');
+  if(data.usage){
+    S.usage.in+=data.usage.prompt_tokens||0;S.usage.out+=data.usage.completion_tokens||0;S.usage.calls++;
+    S.usage.usd=(S.usage.usd||0)+((data.eigo&&typeof data.eigo.cost_usd==='number')?data.eigo.cost_usd
+      :((data.usage.prompt_tokens||0)*PRICE.inPerM+(data.usage.completion_tokens||0)*PRICE.outPerM)/1e6);
+    save();
+  }
+  const ch=data.choices&&data.choices[0];
+  const c=ch&&ch.message&&ch.message.content;
+  if(!c){
+    if(ch&&ch.finish_reason==='length')throw new Error('AIの出力が上限で途中で切れました。もう一度試してください。');
+    throw new Error('応答が空でした。もう一度試してください。');
+  }
   return c;
 }
 
 /* ================= タブ ================= */
 function switchTab(id){
   stopSpeak();clearCardTimer();
+  if(curTab!==id){curTab=id;moveDwell();track('tab',screenFeature(),null,{tab:id})}
   document.querySelectorAll('.tab').forEach(function(s){s.classList.toggle('active',s.id===id)});
   document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===id)});
   if(id==='tab-rec')renderRec();
@@ -1088,23 +1279,24 @@ async function doAsk(){
   const deep=S.settings.askMode==='deep';
   const btn=$('askBtn');btn.disabled=true;btn.textContent=deep?'精読中…（20秒ほど）':'考え中…';
   $('askErr').hidden=true;
+  const t0=Date.now(),mode=deep?'deep':'std';
   try{
     let added=[];
     if(deep){
       // 精読モード: ①本文解説はプレーンテキスト（途中で切れても読める）②カード抽出は別呼び出し
-      const text=await api([{role:'system',content:SYS_DEEP},{role:'user',content:q}],{json:false,maxTokens:2000,temperature:0.3});
+      const text=await api([{role:'system',content:SYS_DEEP},{role:'user',content:q}],{json:false,maxTokens:2000,temperature:0.3,feature:'ask_deep'});
       $('askOut').hidden=false;
       $('askExp').innerHTML=nl2html(text);
       pushHist(q,text,'deep');
       save();
       try{
-        const ex=await api([{role:'system',content:SYS_EXTRACT},{role:'user',content:'【入力】\n'+q.slice(0,1500)+'\n\n【解説】\n'+text.slice(0,4000)}],{json:true,maxTokens:600,temperature:0.2});
+        const ex=await api([{role:'system',content:SYS_EXTRACT},{role:'user',content:'【入力】\n'+q.slice(0,1500)+'\n\n【解説】\n'+text.slice(0,4000)}],{json:true,maxTokens:600,temperature:0.2,feature:'extract'});
         const obj=parseModelJSON(ex);
         added=addItems(Array.isArray(obj.items)?obj.items:[],q);
         save();
-      }catch(e2){toast('カード抽出に失敗（解説は表示済み）')}
+      }catch(e2){toast('カード抽出に失敗（解説は表示済み）');track('ask_err','ask',null,{mode:mode,stage:'extract',msg:String(e2.message).slice(0,200)})}
     }else{
-      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:1200,temperature:0.3});
+      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:1200,temperature:0.3,feature:'ask_vocab'});
       const obj=parseModelJSON(content);
       $('askOut').hidden=false;
       $('askExp').innerHTML=nl2html(obj.explanation||'（解説なし）');
@@ -1116,7 +1308,11 @@ async function doAsk(){
     renderHist();
     renderCardStatus();
     touch();save();
-  }catch(e){$('askErr').textContent=e.message;$('askErr').hidden=false}
+    track('ask','ask',q.length,{mode:mode,cards:added.length,ms:Date.now()-t0});
+  }catch(e){
+    $('askErr').textContent=e.message;$('askErr').hidden=false;
+    track('ask_err','ask',null,{mode:mode,msg:String(e.message).slice(0,200)});
+  }
   finally{btn.disabled=false;btn.textContent='質問する'}
 }
 function renderAskItems(list){
@@ -1178,8 +1374,8 @@ function setAskMode(deep){
 }
 $('askBtn').addEventListener('click',doAsk);
 $('askClear').addEventListener('click',function(){$('askInput').value='';$('askInput').focus()});
-$('askModeStd').addEventListener('click',function(){setAskMode(false)});
-$('askModeDeep').addEventListener('click',function(){setAskMode(true)});
+$('askModeStd').addEventListener('click',function(){setAskMode(false);track('setting','ask',null,{key:'askMode',v:'std'})});
+$('askModeDeep').addEventListener('click',function(){setAskMode(true);track('setting','ask',null,{key:'askMode',v:'deep'})});
 
 /* ================= 読解テスト ================= */
 const SYS_READING=[
@@ -1241,6 +1437,7 @@ async function genReading(hard){
   $('quizErr').hidden=true;$('quiz').innerHTML='';
   const bucket=pickBucket();
   const weak=pickWeakItems();
+  const t0=Date.now();
   try{
     const user=JSON.stringify({
       '出題分野':{name:bucket.name,desc:bucket.desc},
@@ -1249,13 +1446,17 @@ async function genReading(hard){
       '難問モード':hard,
       '弱点リスト':weak.map(function(x){return {front:x.front,back:x.back}})
     });
-    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:hard?2000:1800,temperature:0.7});
+    const content=await api([{role:'system',content:SYS_READING},{role:'user',content:user}],{json:true,maxTokens:hard?2000:1800,temperature:0.7,feature:hard?'reading_hard':'reading'});
     const q=parseModelJSON(content);
     if(q.passage)q.passage=String(q.passage).replace(/<\/?[a-zA-Z][^>]*>/g,'').replace(/\n{3,}/g,'\n\n');
     if(!q.passage||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
-    currentQuiz={data:q,bucket:bucket,graded:false,hard:hard};
+    currentQuiz={data:q,bucket:bucket,graded:false,hard:hard,shownAt:Date.now()};
     renderQuiz();
-  }catch(e){$('quizErr').textContent=e.message;$('quizErr').hidden=false}
+    track('gen','reading',Date.now()-t0,{mode:'reading',bucket:bucket.id,hard:hard});
+  }catch(e){
+    $('quizErr').textContent=e.message;$('quizErr').hidden=false;
+    track('gen_err','reading',null,{mode:'reading',bucket:bucket.id,hard:hard,msg:String(e.message).slice(0,200)});
+  }
   finally{$('genBtn').disabled=false;$('genHardBtn').disabled=false;btn.textContent=label}
 }
 function renderQuiz(){
@@ -1330,6 +1531,8 @@ function gradeQuiz(){
   if(S.tests.length>100)S.tests=S.tests.slice(-100);
   touch();
   save();
+  track('test','reading',score/data.questions.length,{mode:'reading',bucket:bucket.id,score:score,total:data.questions.length,hard:!!currentQuiz.hard,
+    sec:Math.round((Date.now()-(currentQuiz.shownAt||Date.now()))/1000),boxMoves:changes.length});
   // 織り込んだ弱点語句を本文にハイライト（採点後に表示＝ネタバレ防止）
   const fronts=(data.usedItemFronts||[]).map(function(f){return String(f).trim()}).filter(Boolean).sort(function(a,b){return b.length-a.length});
   let ph=esc(normStr(data.passage));
@@ -1467,6 +1670,7 @@ function startCardTimer(){
     cardLeft--;
     if(cardLeft<=0){
       clearCardTimer();
+      if(session)session.timedOut=true;
       el.textContent='時間切れ';el.classList.add('warn');
       beep('ng');revealCard();
       return;
@@ -1494,6 +1698,7 @@ function renderCard(){
     beep('done');
     ar.innerHTML='<div class="card result"><div class="score num">○ '+session.ok+'　× '+session.ng+'</div><p class="hint">×のカードは箱1に戻り、今日中にまた出ます。</p><button id="cardAgain" class="btn ghost">続けて復習</button></div>';
     $('cardAgain').addEventListener('click',startCards);
+    if(session.ok+session.ng)track('card_set','cards',session.ok/(session.ok+session.ng),{ok:session.ok,ng:session.ng,filter:cardFilt.kind});
     endSession();session=null;
     renderCardStatus();
     return;
@@ -1510,13 +1715,17 @@ function renderCard(){
   $('okBtn').addEventListener('click',function(){answerCard(true)});
   $('ngBtn').addEventListener('click',function(){answerCard(false)});
   if(S.settings.autoSpeak)speakWord(it.front);
+  session.shownAt=Date.now();session.timedOut=false;
   startCardTimer();
 }
 function answerCard(ok){
   clearCardTimer();stopSpeak();
   beep(ok?'ok':'ng');
   const it=session.cards[session.i];
+  const boxBefore=it.box;
   gradeItem(it,ok);
+  track('card','cards',ok?1:0,{type:it.type,pos:it.pos||'',from:boxBefore,to:it.box,timeout:!!session.timedOut,
+    sec:Math.round((Date.now()-(session.shownAt||Date.now()))/1000)});
   if(session.clk)session.clk.touch();
   if(session.res)session.res.push(!!ok);
   S.cardStats.a++;
@@ -1637,7 +1846,7 @@ function renderRateChips(){
     const b=document.createElement('button');
     b.className='chip fchip'+(S.settings.rate===p[0]?' on':'');
     b.textContent=p[1];
-    b.addEventListener('click',function(){S.settings.rate=p[0];save();stopSpeak();renderRateChips()});
+    b.addEventListener('click',function(){S.settings.rate=p[0];save();stopSpeak();renderRateChips();track('setting','listen',p[0],{key:'rate'})});
     wrap.appendChild(b);
   });
 }
@@ -1658,22 +1867,27 @@ async function genListening(){
   $('listenErr').hidden=true;$('listen').innerHTML='';stopSpeak();
   const bucket=pickLBucket();
   const weak=pickWeakItems();
+  const t0=Date.now();
   try{
     const user=JSON.stringify({
       '形式指定':{name:bucket.name,fmt:bucket.fmt},
       '難易度':diffLabel(),
       '弱点リスト':weak.map(function(x){return {front:x.front,back:x.back}})
     });
-    const content=await api([{role:'system',content:SYS_LISTEN},{role:'user',content:user}],{json:true,maxTokens:1500,temperature:0.7});
+    const content=await api([{role:'system',content:SYS_LISTEN},{role:'user',content:user}],{json:true,maxTokens:1500,temperature:0.7,feature:'listen'});
     const q=parseModelJSON(content);
     if(!Array.isArray(q.lines)||!q.lines.length||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
     q.lines.forEach(function(l){l.text=stripLabel(String(l.text||'').replace(/<\/?[a-zA-Z][^>]*>/g,''))});
     q.lines=q.lines.filter(function(l){return l.text});
     if(!q.lines.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
     const genders=assignGenders(q.lines);
-    currentListen={data:q,bucket:bucket,graded:false,plays:0,genders:genders,labels:genderLabels(genders)};
+    currentListen={data:q,bucket:bucket,graded:false,plays:0,genders:genders,labels:genderLabels(genders),shownAt:Date.now()};
     renderListen();
-  }catch(e){$('listenErr').textContent=e.message;$('listenErr').hidden=false}
+    track('gen','listen',Date.now()-t0,{mode:'listen',bucket:bucket.id,rate:S.settings.rate});
+  }catch(e){
+    $('listenErr').textContent=e.message;$('listenErr').hidden=false;
+    track('gen_err','listen',null,{mode:'listen',bucket:bucket.id,msg:String(e.message).slice(0,200)});
+  }
   finally{btn.disabled=false;btn.textContent='問題を作成'}
 }
 function renderListen(){
@@ -1694,10 +1908,10 @@ function renderListen(){
   h+='<button id="lgradeBtn" class="btn" data-nosound>採点する</button><div id="listenResult"></div>';
   $('listen').innerHTML=h;
   $('playBtn').addEventListener('click',function(){
-    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回';track('play','listen',currentListen.plays,{graded:currentListen.graded})}
   });
   $('replayBtn').addEventListener('click',function(){
-    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回'}
+    if(speakLines(data.lines,currentListen.genders)){currentListen.plays++;$('playCount').textContent='再生 '+currentListen.plays+'回';track('play','listen',currentListen.plays,{graded:currentListen.graded})}
   });
   $('stopBtn').addEventListener('click',stopSpeak);
   document.querySelectorAll('#listen .choice').forEach(function(lb){
@@ -1743,6 +1957,8 @@ function gradeListen(){
   S.tests.push({d:todayStr(),mode:'listen',bucketId:bucket.id,score:score,total:data.questions.length});
   if(S.tests.length>100)S.tests=S.tests.slice(-100);
   touch();save();
+  track('test','listen',score/data.questions.length,{mode:'listen',bucket:bucket.id,score:score,total:data.questions.length,plays:currentListen.plays,
+    rate:S.settings.rate,sec:Math.round((Date.now()-(currentListen.shownAt||Date.now()))/1000)});
   let rh='<div class="card result"><div class="score num">'+score+' / '+data.questions.length+'</div>';
   rh+='<div class="script">'+data.lines.map(function(l){
     const lb=(currentListen.labels&&currentListen.labels[l.speaker||'A'])||'';
@@ -1761,6 +1977,7 @@ $('lgenBtn').addEventListener('click',genListening);
 /* モード切替 */
 function setMode(m){
   stopSpeak();clearCardTimer();
+  if(testMode!==m){testMode=m;if(curTab==='tab-test'){moveDwell();track('tab',m,null,{mode:m})}}
   $('modeReading').classList.toggle('on',m==='reading');
   $('modeListen').classList.toggle('on',m==='listen');
   $('modeCards').classList.toggle('on',m==='cards');
@@ -1996,6 +2213,7 @@ function renderRec(){
       S.items=S.items.filter(function(i){return i.id!==id});
       if(recOpenId===id)recOpenId=null;
       save();renderRec();renderCardStatus();
+      if(_it)track('card_del','records',null,{type:_it.type,box:_it.box});
     });
   });
   const ed=document.querySelector('#itemList .redit');
@@ -2015,6 +2233,7 @@ function renderRec(){
          }catch(e){}
         }
         save();toast('保存しました');renderRec();renderCardStatus();
+        track('card_edit','records',null,{type:it.type});
       });
       ed.querySelectorAll('.tgl').forEach(function(tb){
         tb.addEventListener('click',function(e){
@@ -2028,7 +2247,7 @@ function renderRec(){
       });
     }
   }
-  const cost=(S.usage.in*PRICE.inPerM+S.usage.out*PRICE.outPerM)/1e6;
+  const cost=S.usage.usd||0;
   $('usageBox').innerHTML='<div class="hint num">呼び出し '+S.usage.calls+'回／入力 '+S.usage.in.toLocaleString()+' tok／出力 '+S.usage.out.toLocaleString()+' tok<br>概算 $'+cost.toFixed(4)+'（約 ¥'+Math.ceil(cost*PRICE.yen)+'）</div>';
 }
 
@@ -2048,6 +2267,7 @@ $('tagAssignDone').addEventListener('click',function(){assignTag=null;renderRec(
 $('expBtn').addEventListener('click',async function(){
   const data=JSON.stringify({app:'eigo-coach',v:1,exportedAt:new Date().toISOString(),data:S});
   $('ioWrap').hidden=false;$('impApply').hidden=true;$('ioArea').value=data;
+  track('backup','records',null,{op:'export',items:S.items.length});
   try{
     await navigator.clipboard.writeText(data);
     $('ioHint').textContent='クリップボードにコピーしました。メモ帳などに貼って保管してください。';
@@ -2073,6 +2293,7 @@ $('impApply').addEventListener('click',async function(){
      さもないと次回起動時にバスから削除済みカードが再流入する（setReset と同じ理由・同じやり方） */
   S.busDeleted=_old.concat(S.busDeleted||[]).filter(function(k,i,a){return k&&a.indexOf(k)===i;});
   save();renderRec();renderCardStatus();toast('復元しました');
+  track('backup','records',null,{op:'import',items:S.items.length});
 });
 
 /* ================= 設定 ================= */
@@ -2088,9 +2309,32 @@ function renderPrefs(){
       S.settings[p[0]]=!S.settings[p[0]];
       if(p[0]==='sound'&&S.settings.sound)beep('tap');
       save();renderPrefs();
+      track('setting','settings',null,{key:p[0],on:S.settings[p[0]]});
     });
     wrap.appendChild(b);
   });
+}
+/* 利用データの送信（オン/オフ）。オフにしたら端末内に貯めた分も捨てる */
+function renderAnalytics(){
+  const wrap=$('anaChips');wrap.innerHTML='';
+  const on=!!S.settings.analytics;
+  const b=document.createElement('button');
+  b.className='chip fchip'+(on?' on':'');
+  b.setAttribute('aria-pressed',on?'true':'false');
+  b.textContent=(on?'✓ ':'')+'利用データを送る';
+  b.addEventListener('click',function(){
+    if(S.settings.analytics){
+      S.settings.analytics=false;
+      AN.clear(); // 止めたらその場で止める。「オフにした」という記録も送らない
+    }else{
+      S.settings.analytics=true;
+      track('setting','settings',null,{key:'analytics',on:true});
+    }
+    S.settings.noticeV=Math.max(S.settings.noticeV||0,NOTICE_V);
+    save();renderAnalytics();
+  });
+  wrap.appendChild(b);
+  $('anaId').textContent='この端末の番号：'+AN.uid+'（データの削除を頼むときに伝えてください）';
 }
 function renderVols(){
   const v=Math.round(((typeof S.settings.vol==='number')?S.settings.vol:1)*100);
@@ -2102,13 +2346,13 @@ $('volRange').addEventListener('input',function(){
   S.settings.vol=Number($('volRange').value)/100;
   $('volVal').textContent=$('volRange').value+'%';
 });
-$('volRange').addEventListener('change',function(){save();speakWord('volume')});
+$('volRange').addEventListener('change',function(){save();speakWord('volume');track('setting','settings',S.settings.vol,{key:'vol'})});
 $('sfxRange').addEventListener('input',function(){
   S.settings.sfxVol=Number($('sfxRange').value)/100;
   $('sfxVal').textContent=$('sfxRange').value+'%';
 });
-$('sfxRange').addEventListener('change',function(){save();beep('ok')});
-function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols()}
+$('sfxRange').addEventListener('change',function(){save();beep('ok');track('setting','settings',S.settings.sfxVol,{key:'sfxVol'})});
+function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols();renderAnalytics()}
 $('setSave').addEventListener('click',function(){
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
@@ -2120,13 +2364,15 @@ $('setTest').addEventListener('click',async function(){
   save();
   const out=$('setTestOut');out.textContent='接続中…';
   try{
-    const c=await api([{role:'user',content:'Reply with exactly: ok'}],{json:false,maxTokens:5,temperature:0});
+    const c=await api([{role:'user',content:'Reply with exactly: ok'}],{json:false,maxTokens:5,temperature:0,feature:'conn_test'});
     out.textContent='✓ 接続成功（応答: '+c.trim().slice(0,20)+'）';
   }catch(e){out.textContent='✗ '+e.message}
 });
 $('setReset').addEventListener('click',async function(){
   const yes=await confirmBox('全データ（カード・記録・設定）を削除します。元に戻せません。よろしいですか？');
   if(!yes)return;
+  track('reset','settings',null,{items:S.items.length});
+  AN.flushBeacon();
   const _old=(S.busDeleted||[]).slice();
   const _keys=S.items.filter(function(it){return it.busKey}).map(function(it){return it.busKey});
   S=fresh();
@@ -2138,19 +2384,20 @@ $('setReset').addEventListener('click',async function(){
 $('fbSend').addEventListener('click',async function(){
   const txt=$('fbText').value.trim();
   if(!txt){toast('内容を入力してください');return}
-  let url=(S.settings.workerUrl||'').trim();
-  if(!url){toast('先に接続設定を行ってください');return}
-  if(!/^https?:\/\//.test(url))url='https://'+url;
-  url=url.replace(/\/+$/,'')+'/feedback';
+  const base=workerBase();
+  if(!base){toast('先に接続設定を行ってください');return}
+  const url=base+'/feedback';
   const btn=$('fbSend');btn.disabled=true;btn.textContent='送信中…';
   try{
     const headers={'Content-Type':'application/json'};
     if(S.settings.appKey)headers['x-app-key']=S.settings.appKey;
-    const res=await fetch(url,{method:'POST',headers:headers,body:JSON.stringify({text:txt.slice(0,2000),at:new Date().toISOString(),app:'eigo-coach v1'})});
+    /* 端末の番号は利用データを送っている人だけ添える（管理画面で利用状況と突き合わせるため） */
+    const res=await fetch(url,{method:'POST',headers:headers,body:JSON.stringify({text:txt.slice(0,2000),at:new Date().toISOString(),app:APP_VER,uid:canSendAnalytics()?AN.uid:''})});
     const d=await res.json().catch(function(){return {}});
     if(!res.ok||d.error){throw new Error((d.error&&(d.error.message||d.error))||('HTTP '+res.status))}
     $('fbText').value='';
     $('fbOut').textContent='送信しました。開発の参考にします。';
+    track('feedback','settings',txt.length);
   }catch(e){$('fbOut').textContent='送信できません：'+e.message}
   finally{btn.disabled=false;btn.textContent='送信'}
 });
@@ -2164,11 +2411,26 @@ $('cmdToggle').addEventListener('click',function(){
 });
 
 $('shareBtn').addEventListener('click',function(){
-  try{shareImage()}catch(e){toast('画像を作れませんでした')}
+  try{shareImage();track('share','records')}catch(e){toast('画像を作れませんでした')}
 });
+/* 利用状況の記録の告知。版数を上げると全員にもう一度表示される（記録内容を変えた時に上げる） */
+const NOTICE_V=1;
+function showNoticeIfNeeded(){if((S.settings.noticeV||0)<NOTICE_V)$('notice').hidden=false}
+function closeNotice(send){
+  S.settings.analytics=!!send;
+  S.settings.noticeV=NOTICE_V;
+  save();
+  $('notice').hidden=true;
+  if(send){track('notice',null,null,{v:NOTICE_V});AN.flush()}else{AN.clear()}
+  renderAnalytics();
+}
+$('noticeOk').addEventListener('click',function(){closeNotice(true)});
+$('noticeNo').addEventListener('click',function(){closeNotice(false)});
 $('obDone').addEventListener('click',function(){
   S.settings.onboarded=true;save();
   $('ob').hidden=true;
+  track('onboard');
+  showNoticeIfNeeded();
   if(!S.settings.workerUrl){
     switchTab('tab-set');
     $('connBox').hidden=false;
@@ -2179,6 +2441,25 @@ $('obDone').addEventListener('click',function(){
 
 /* ================= 起動 ================= */
 document.addEventListener('gesturestart',function(e){e.preventDefault()});
+/* 利用状況: 起動を記録し、前面時間と画面滞在の計測を始める（switchTab より前に始めておく） */
+function uaKind(){const u=navigator.userAgent||'';return /iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1)?'ios':/Android/.test(u)?'android':/Windows/.test(u)?'windows':/Macintosh/.test(u)?'mac':'other'}
+function isPWA(){try{return !!(window.navigator.standalone||matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
+track('open',null,null,{ua:uaKind(),pwa:isPWA(),w:screen.width,h:screen.height,dpr:window.devicePixelRatio||1,lang:navigator.language||'',
+  dark:!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),v:APP_VER,items:S.items.length});
+if(!document.hidden){FG.start('fg');DW.start(screenFeature())}
+['pointerdown','keydown'].forEach(function(t){document.addEventListener(t,function(){FG.touch();DW.touch()},{capture:true,passive:true})});
+/* iPhone ではスワイプで閉じると hidden の直後にページごと破棄される。hidden と pagehide の両方で確定させて送る
+   （単語カードの学習時間を確定させるリスナーは下に別にある。こちらは利用状況の記録だけを担当） */
+function analyticsOnVisibility(){
+  if(document.hidden){closeDwell();AN.flushBeacon()}
+  else{FG.start('fg');DW.start(screenFeature());AN.flush()}
+}
+function analyticsOnPageHide(){closeDwell();AN.flushBeacon()}
+document.addEventListener('visibilitychange',analyticsOnVisibility);
+window.addEventListener('pagehide',analyticsOnPageHide);
+let jsErrs=0;
+window.addEventListener('error',function(e){if(jsErrs++<5)track('js_err',null,null,{msg:String(e.message||'').slice(0,200),src:String(e.filename||'').split('/').pop(),line:e.lineno||0})});
+window.addEventListener('unhandledrejection',function(e){if(jsErrs++<5)track('js_err',null,null,{msg:String((e.reason&&e.reason.message)||e.reason||'').slice(0,200),src:'promise'})});
 loadSettings();
 setAskMode(S.settings.askMode==='deep');
 renderRateChips();
@@ -2186,13 +2467,17 @@ renderHist();
 renderCardStatus();
 renderRec();
 if(!S.settings.onboarded){
-  $('ob').hidden=false;
-}else if(!S.settings.workerUrl){
-  switchTab('tab-set');
-  $('connBox').hidden=false;
-  $('connToggle').textContent='接続設定を閉じる';
-  toast('まず設定でWorker URLを入力してください');
+  $('ob').hidden=false; // 告知はオンボーディングを閉じた後に出す
+}else{
+  showNoticeIfNeeded();
+  if(!S.settings.workerUrl){
+    switchTab('tab-set');
+    $('connBox').hidden=false;
+    $('connToggle').textContent='接続設定を閉じる';
+    toast('まず設定でWorker URLを入力してください');
+  }
 }
+AN.flush(); // 前回までに貯まっていた分を送る（送ってよい状態の時だけ）
 document.addEventListener('visibilitychange',function(){
  if(!session||!session.clk)return;
  /* hidden になった時点でその場までの学習時間を確定させる。iPhoneでホーム画面の

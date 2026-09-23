@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>英語コーチ 利用状況</title>
+<!--
+  共テ英語コーチの管理画面（開発者専用）。GitHub Pages で index.html の隣に置く。
+  Worker の /admin/api を ADMIN_KEY 付きで呼び、利用データを集計して表示する。
+  依存ライブラリなし。利用者が入力した文字列（質問文・回答など）は必ず textContent で表示する。
+-->
+<style>
+:root{
+  color-scheme:light;
+  --page:#f5f5f7; --surface:#ffffff; --raise:#fbfbfd;
+  --ink:#1d1d1f; --ink2:#3c3c43; --muted:#6e6e73; --faint:#8e8e93;
+  --line:rgba(60,60,67,.12); --line2:rgba(60,60,67,.20);
+  --fill:rgba(120,120,128,.10); --fill2:rgba(120,120,128,.18);
+  --grid:#e6e6e3; --axis:#c7c7c2;
+  --data:#2a78d6;            /* 単一系列の色（棒・列） */
+  --h1:#cde2fb; --h2:#9ec5f4; --h3:#6da7ec; --h4:#3987e5; --h5:#256abf; --h6:#184f95; /* 量の濃淡（少→多） */
+  --crit:#d03b3b; --good:#006300;
+  --focus:#2a78d6;
+  --r:16px; --rs:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;
+    --page:#0f0f10; --surface:#1a1a1b; --raise:#202022;
+    --ink:#f5f5f7; --ink2:#d1d1d6; --muted:#a1a1a6; --faint:#8e8e93;
+    --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.18);
+    --fill:rgba(255,255,255,.06); --fill2:rgba(255,255,255,.12);
+    --grid:#2c2c2a; --axis:#3a3a38;
+    --data:#3987e5;
+    --h1:#1b3a63; --h2:#1c5cab; --h3:#256abf; --h4:#3987e5; --h5:#6da7ec; --h6:#b7d3f6;
+    --crit:#e66767; --good:#0ca30c;
+    --focus:#6da7ec;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Segoe UI",sans-serif;
+  background:var(--page);color:var(--ink);font-size:14px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;min-height:100dvh;
+  padding:0 16px calc(40px + env(safe-area-inset-bottom));
+}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* ---- 上部 ---- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 10px}
+.top .row{flex-wrap:nowrap}
+.top h1{font-size:20px;line-height:1.3;margin:0;font-weight:700;letter-spacing:.01em}
+.top .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--raise)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---- 絞り込み（すべての表示に効く） ---- */
+.filters{position:sticky;top:0;z-index:5;background:var(--page);padding:8px 0 10px;display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;background:var(--fill);border-radius:999px;padding:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--ink);margin:0}
+
+/* ---- 接続 ---- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin:14px 0}
+.panel h2{margin:0 0 4px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.field label{font-size:12px;font-weight:600;color:var(--ink2)}
+.field input[type=text],.field input[type=password],.search{
+  border:1px solid var(--line2);background:var(--page);border-radius:var(--rs);padding:10px 12px;font-size:16px;width:100%;
+}
+.err{color:var(--crit);font-weight:600}
+.banner{margin:12px 0;padding:10px 14px;border-radius:var(--rs);background:var(--fill);font-weight:600}
+
+/* ---- 本体 ---- */
+main{transition:opacity .2s}
+main.busy{opacity:.55;pointer-events:none}
+h2{font-size:16px;line-height:1.35;margin:0;font-weight:700}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px;min-width:0}
+.bh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.bh .note{font-size:12px;color:var(--muted)}
+.linkbtn{border:0;background:none;color:var(--ink2);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:2px 0}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr;gap:0 14px}
+@media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
+
+/* 数字の列（KPI） */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.kpis .kpi:last-child{grid-column:1 / -1} /* 5枚を2列に並べると最後が1枚だけ余るので、横いっぱいに */
+@media (min-width:760px){.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}.kpis .kpi:last-child{grid-column:auto}}
+@media (max-width:520px){.top .btn{padding:6px 11px;font-size:12px}.heat .c{height:16px}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;min-width:0}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:26px;font-weight:700;line-height:1.25;margin-top:2px;letter-spacing:-.01em}
+.kpi .s{font-size:12px;color:var(--ink2);margin-top:2px}
+
+/* ヒートマップ（時間帯×機能） */
+.heat{display:grid;grid-template-columns:78px repeat(24,minmax(0,1fr));gap:2px;align-items:center}
+.heat .rl{font-size:12px;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.heat .c{height:22px;border-radius:3px;background:var(--fill)}
+.heat .c:hover,.heat .c:focus-visible{outline:2px solid var(--ink);outline-offset:0}
+.heat .hl{font-size:11px;color:var(--muted);text-align:left;white-space:nowrap}
+.scale{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--muted)}
+.scale i{display:inline-block;width:18px;height:10px;border-radius:2px}
+
+/* グラフ（SVG） */
+.chart{width:100%;display:block;overflow:visible}
+.chart text{font-size:11px;fill:var(--muted)}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .base{stroke:var(--axis);stroke-width:1}
+.chart .bar{fill:var(--data)}
+.chart .hit{fill:transparent}
+.chart .hit:hover+.bar,.chart g.on .bar{opacity:.75}
+.mult{display:grid;grid-template-columns:72px 1fr 64px;gap:4px 10px;align-items:center}
+.mult .ml{font-size:12px;font-weight:600;color:var(--ink2)}
+.mult .mv{font-size:12px;color:var(--muted);text-align:right}
+
+/* 表 */
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;white-space:nowrap;border-bottom:1px solid var(--line2)}
+td{padding:8px 10px;white-space:nowrap;border-bottom:1px solid var(--line)}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--fill)}
+tbody tr.sel td{background:var(--fill2)}
+.sticky1{position:sticky;left:0;background:var(--surface);z-index:1}
+tbody tr.click:hover td.sticky1{background:var(--raise)}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--fill2);color:var(--ink2);margin-left:6px;vertical-align:1px}
+
+/* 正答率の横棒 */
+.hbars{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.hb{display:grid;grid-template-columns:minmax(96px,168px) 1fr 84px;gap:10px;align-items:center;font-size:12px}
+.hb .n{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .t{height:10px;position:relative}
+.hb .t b{position:absolute;left:0;top:0;bottom:0;background:var(--data);border-radius:0 4px 4px 0}
+.hb .v{text-align:right;color:var(--ink2)}
+.sub2{font-size:13px;font-weight:700;margin:14px 0 8px}
+.sub2:first-child{margin-top:0}
+
+/* 時系列（1人分） */
+.tl{margin-top:14px;border-top:1px solid var(--line2);padding-top:12px}
+.tl .day{font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 4px}
+.tl .it{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:5px 0;font-size:13px}
+.tl .tm{color:var(--muted)}
+.tl .k{font-weight:600}
+.tl .d{color:var(--ink2);word-break:break-word}
+.tl .q{color:var(--muted);font-size:12px;word-break:break-word}
+
+/* 質問と回答 */
+.qa{display:flex;flex-direction:column}
+.qi{padding:12px 0;border-bottom:1px solid var(--line)}
+.qi:last-child{border-bottom:0}
+.qi .m{font-size:12px;color:var(--muted)}
+.qi .q{font-weight:700;margin-top:2px;white-space:pre-wrap;word-break:break-word}
+.qi .a{margin-top:4px;color:var(--ink2);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.qi .a.open{display:block}
+
+/* エラー */
+.errlist .e{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.errlist .e:last-child{border-bottom:0}
+.errlist .x{color:var(--crit);font-weight:700;margin-right:6px}
+
+/* ツールチップ */
+.tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--page);border-radius:8px;padding:6px 10px;font-size:12px;line-height:1.45;max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.tip b{font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>利用状況</h1>
+      <div class="sub">共テ英語コーチ<span id="updated" class="num"></span></div>
+    </div>
+    <div class="row">
+      <button id="reload" class="btn" hidden>再読み込み</button>
+      <button id="openConn" class="btn">接続設定</button>
+    </div>
+  </header>
+
+  <section id="conn" class="panel" hidden>
+    <h2>接続設定</h2>
+    <p class="muted small" style="margin:4px 0 0">アプリと同じ Worker URL と、Worker に設定した ADMIN_KEY を入力します。ADMIN_KEY は URL に含めず、この画面の中だけで使います。</p>
+    <div class="field">
+      <label for="cUrl">Worker URL</label>
+      <input type="text" id="cUrl" placeholder="https://xxxx.workers.dev" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="cKey">ADMIN_KEY</label>
+      <input type="password" id="cKey" autocomplete="off">
+    </div>
+    <label class="chk" style="margin-top:12px"><input type="checkbox" id="cRemember">この端末に記憶する（オフならタブを閉じると消えます）</label>
+    <div class="row" style="margin-top:14px">
+      <button id="cGo" class="btn primary">接続</button>
+      <button id="cForget" class="btn">この端末から消す</button>
+    </div>
+    <div id="cErr" class="err small" style="margin-top:10px"></div>
+  </section>
+
+  <nav id="filters" class="filters" aria-label="絞り込み" hidden>
+    <div class="seg" id="fDays" role="group" aria-label="期間">
+      <button data-v="7">7日</button><button data-v="30">30日</button><button data-v="90">90日</button>
+    </div>
+    <div class="seg" id="fMetric" role="group" aria-label="機能の集計">
+      <button data-v="acts">回数</button><button data-v="sec">時間</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="fOwner">自分の利用を含める</label>
+  </nav>
+
+  <div id="banner" class="banner" hidden></div>
+  <div id="loading" class="empty" hidden>読み込み中…</div>
+
+  <main id="main" hidden>
+    <section class="kpis" id="kpis" aria-label="主な数字"></section>
+
+    <section class="block">
+      <div class="bh">
+        <h2>時間帯と機能</h2>
+        <button class="linkbtn" data-table="heat">表で見る</button>
+      </div>
+      <div id="heat"></div>
+      <div id="heat-table" class="tablewrap" hidden></div>
+    </section>
+
+    <div class="grid2">
+      <section class="block">
+        <div class="bh">
+          <h2>日ごとの利用者数</h2>
+          <button class="linkbtn" data-table="dau">表で見る</button>
+        </div>
+        <div id="dau"></div>
+        <div id="dau-table" class="tablewrap" hidden></div>
+      </section>
+      <section class="block">
+        <div class="bh">
+          <h2>機能ごとの利用（日別）</h2>
+          <span class="note" id="multNote"></span>
+        </div>
+        <div id="mult"></div>
+      </section>
+    </div>
+
+    <section class="block">
+      <div class="bh">
+        <h2>利用者</h2>
+        <span class="note">行をタップすると、その人の行動を時系列で表示</span>
+      </div>
+      <div id="users"></div>
+      <div id="timeline" class="tl" hidden></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2>分野ごとの正答率</h2></div>
+      <div id="buckets"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2>AIの呼び出し</h2><span class="note">費用は概算（1ドル=155円）</span></div>
+      <div id="ai"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2>質問と回答</h2></div>
+      <input type="search" id="qaSearch" class="search" placeholder="質問文・回答を検索" aria-label="質問文・回答を検索">
+      <div id="qa" class="qa" style="margin-top:6px"></div>
+      <div class="row" style="justify-content:center;margin-top:10px"><button id="qaMore" class="btn" hidden>もっと見る</button></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2>エラー</h2></div>
+      <div id="errors" class="grid2"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2>データの書き出し</h2><span class="note">期間・絞り込みに関係なく全件（CSV・Excelで開けます）</span></div>
+      <div class="row">
+        <button class="btn" data-csv="events">行動（events）</button>
+        <button class="btn" data-csv="ai_calls">AI呼び出し（ai_calls）</button>
+        <button class="btn" data-csv="users">利用者（users）</button>
+      </div>
+      <div id="csvMsg" class="muted small" style="margin-top:8px"></div>
+    </section>
+  </main>
+</div>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+
+<script>
+'use strict';
+/* ================= 定数 ================= */
+const YEN = 155;
+const FEATURES = [['ask', '質問'], ['reading', '読解'], ['listen', 'リスニング'], ['cards', '単語'], ['records', '記録'], ['settings', '設定']];
+const FEATURE_LABEL = Object.fromEntries(FEATURES.concat([['other', 'その他']]));
+const AI_FEATURE = { ask_vocab: '単語の質問', ask_deep: '英文解説', extract: 'カード抽出', reading: '読解の作成', reading_hard: '難問の作成', listen: 'リスニングの作成', conn_test: '接続テスト', other: 'その他' };
+const KIND = { open: '起動', fg: '前面で使用', dwell: '画面に滞在', tab: '画面を切替', ask: '質問', ask_err: '質問のエラー', gen: '問題を作成', gen_err: '作成のエラー',
+  test: '採点', play: '音声を再生', card: 'カードに回答', card_set: 'カード1セット終了', card_edit: 'カードを編集', card_del: 'カードを削除', setting: '設定を変更',
+  backup: 'バックアップ', share: 'シェア', feedback: 'フィードバック送信', reset: '全データを削除', onboard: '初回案内を完了', notice: '記録の告知を確認', js_err: 'アプリのエラー' };
+/* アプリ（index.html）の BUCKETS / LBUCKETS と同じ番号・名前 */
+const READING = ['掲示・案内・広告', 'ウェブサイト・SNS', 'Eメール・メッセージ', '予定表・時刻表・料金表', 'レシピ・手順・説明書', 'ブログ・体験記', '物語文', '伝記・人物紹介',
+  'レビュー・意見文', '議論・複数の意見', '説明文（科学・自然）', '説明文（社会・文化）', 'グラフ・図表つき英文', '要旨・タイトル選択', '段落構成・順序', '指示語・代名詞',
+  '語彙推測・言い換え', '推論', '複数資料の照合', '筆者の意図・目的'];
+const LISTEN = ['日常会話', 'アナウンス・お知らせ', '説明・講義', '意見・スピーチ', '数値の聞き取り', 'グループの相談'];
+const SETTING = { sound: '効果音', autoSpeak: '自動読み上げ', timer: '5秒タイマー', vol: '読み上げ音量', sfxVol: '効果音の音量', rate: '読み上げ速度', askMode: '質問モード', analytics: '利用データの送信' };
+
+/* ================= 小道具 ================= */
+const $ = (id) => document.getElementById(id);
+/* DOM を組む。文字列は必ず textContent 経由（利用者の入力をそのまま表示するため） */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  setAttrs(el, attrs);
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return el;
+}
+function sv(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  setAttrs(el, attrs);
+  return el;
+}
+function setAttrs(el, attrs) {
+  if (!attrs) return;
+  for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') el.setAttribute('class', v);
+    else if (k === 'text') el.textContent = v;
+    else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+}
+const nf = new Intl.NumberFormat('ja-JP');
+const fmtInt = (n) => nf.format(Math.round(n || 0));
+const pct = (x) => (x == null || !isFinite(x) ? '-' : Math.round(x * 100) + '%');
+function fmtYen(usd) {
+  const y = (usd || 0) * YEN;
+  return '¥' + (y < 10 ? y.toFixed(1) : fmtInt(y));
+}
+function fmtDur(sec) {
+  sec = Math.round(sec || 0);
+  if (sec < 60) return sec + '秒';
+  if (sec < 3600) return Math.round(sec / 60) + '分';
+  return Math.floor(sec / 3600) + '時間' + Math.round((sec % 3600) / 60) + '分';
+}
+const TZ = { timeZone: 'Asia/Tokyo' };
+const fmtTs = (ts) => new Date(ts).toLocaleString('ja-JP', Object.assign({ month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }, TZ));
+const fmtTime = (ts) => new Date(ts).toLocaleTimeString('ja-JP', Object.assign({ hour: '2-digit', minute: '2-digit' }, TZ));
+const fmtDate = (ts) => new Date(ts).toLocaleDateString('ja-JP', Object.assign({ month: 'numeric', day: 'numeric', weekday: 'short' }, TZ));
+const shortDay = (d) => Number(d.slice(5, 7)) + '/' + Number(d.slice(8, 10));
+function parseJSON(s) { try { return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function metricLabel(v) { return state.metric === 'sec' ? fmtDur(v) : fmtInt(v) + '回'; }
+function deviceLabel(dev) {
+  const d = typeof dev === 'string' ? parseJSON(dev) : dev;
+  if (!d) return '-';
+  const os = { ios: 'iPhone/iPad', android: 'Android', windows: 'Windows', mac: 'Mac' }[d.ua] || 'その他';
+  return os + (d.pwa ? '・ホーム画面' : '・ブラウザ');
+}
+/* 期間の日付を1日ずつ並べる（データの無い日も0として出す） */
+function daysBetween(since, today) {
+  const out = [];
+  let t = Date.parse(since + 'T00:00:00Z');
+  const end = Date.parse(today + 'T00:00:00Z');
+  while (t <= end) { out.push(new Date(t).toISOString().slice(0, 10)); t += 86400000; }
+  return out;
+}
+function niceMax(m) {
+  if (m <= 5) return Math.max(1, Math.ceil(m));
+  const p = Math.pow(10, Math.floor(Math.log10(m)));
+  for (const k of [1, 2, 2.5, 5, 10]) if (m <= k * p) return k * p;
+  return 10 * p;
+}
+
+/* ================= 保存（この端末だけの便利機能） ================= */
+const K_URL = 'eigo-admin:url', K_KEY = 'eigo-admin:key', K_PREF = 'eigo-admin:pref';
+function lsGet(store, k) { try { return window[store].getItem(k); } catch (e) { return null; } }
+function lsSet(store, k, v) { try { if (v == null) window[store].removeItem(k); else window[store].setItem(k, v); } catch (e) {} }
+const conn = {
+  url: lsGet('localStorage', K_URL) || '',
+  key: lsGet('sessionStorage', K_KEY) || lsGet('localStorage', K_KEY) || '',
+};
+const pref = parseJSON(lsGet('localStorage', K_PREF)) || {};
+const state = {
+  days: [7, 30, 90].indexOf(pref.days) >= 0 ? pref.days : 30,
+  metric: pref.metric === 'sec' ? 'sec' : 'acts',
+  owner: pref.owner === 0 ? 0 : 1,
+  data: null,
+  qa: { search: '', next: null },
+  selUid: null,
+};
+function savePref() { lsSet('localStorage', K_PREF, JSON.stringify({ days: state.days, metric: state.metric, owner: state.owner })); }
+
+/* ================= 通信 ================= */
+function base() {
+  let u = conn.url.trim();
+  if (!u) return '';
+  if (!/^https?:\/\//.test(u)) u = 'https://' + u;
+  return u.replace(/\/+$/, '');
+}
+class AuthError extends Error {}
+async function api(params) {
+  const res = await fetch(base() + '/admin/api?' + new URLSearchParams(params), { headers: { 'x-admin-key': conn.key } });
+  let d = null;
+  try { d = await res.json(); } catch (e) {}
+  if (res.status === 401) throw new AuthError('ADMIN_KEY が違います');
+  if (!res.ok || !d || d.error) throw new Error((d && d.error && d.error.message) || ('HTTP ' + res.status));
+  return d;
+}
+
+/* ================= ツールチップ（タップでも表示） ================= */
+const tip = $('tip');
+let tipTimer = null;
+function showTip(ev, strong, sub) {
+  tip.replaceChildren(h('b', null, strong), sub ? h('div', null, sub) : null);
+  tip.hidden = false;
+  const r = ev.currentTarget && ev.currentTarget.getBoundingClientRect ? ev.currentTarget.getBoundingClientRect() : null;
+  const x = ev.clientX != null && ev.clientX !== 0 ? ev.clientX : (r ? r.left + r.width / 2 : 0);
+  const y = ev.clientY != null && ev.clientY !== 0 ? ev.clientY : (r ? r.top : 0);
+  const w = tip.offsetWidth, hh = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x - w / 2)) + 'px';
+  tip.style.top = Math.max(8, y - hh - 12) + 'px';
+  clearTimeout(tipTimer);
+  if (ev.pointerType === 'touch') tipTimer = setTimeout(hideTip, 2500);
+}
+function hideTip() { tip.hidden = true; }
+function hover(el, fn) {
+  el.addEventListener('pointerenter', (e) => { const t = fn(); showTip(e, t[0], t[1]); });
+  el.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') { const t = fn(); showTip(e, t[0], t[1]); } });
+  el.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
+  el.addEventListener('focus', (e) => { const t = fn(); showTip(e, t[0], t[1]); });
+  el.addEventListener('blur', hideTip);
+}
+window.addEventListener('scroll', hideTip, { passive: true });
+
+/* ================= 描画 ================= */
+function renderKpis(k) {
+  const tile = (label, value, sub) => h('div', { class: 'kpi' }, h('div', { class: 'l' }, label), h('div', { class: 'v' }, value), h('div', { class: 's' }, sub));
+  const w2 = k.w2.cohort ? pct(k.w2.retained / k.w2.cohort) : '-';
+  $('kpis').replaceChildren(
+    tile('アクティブ利用者', fmtInt(k.activeRange) + '人', '累計 ' + fmtInt(k.users) + '人・新規 ' + fmtInt(k.newUsers) + '人'),
+    tile('今日の利用者', fmtInt(k.activeToday) + '人', '直近7日 ' + fmtInt(k.active7) + '人'),
+    tile('2週目の継続率', w2, k.w2.cohort ? '対象 ' + k.w2.cohort + '人中 ' + k.w2.retained + '人（目標30%）' : '初回から14日たった人がまだいません'),
+    tile('AIの呼び出し', fmtInt(k.calls) + '回', k.avgMs == null ? 'エラー ' + k.errors + '回' : '平均 ' + (k.avgMs / 1000).toFixed(1) + '秒・エラー ' + k.errors + '回'),
+    tile('費用（概算）', fmtYen(k.cost), '$' + (k.cost || 0).toFixed(4))
+  );
+}
+
+/* 時間帯×機能。色は量の濃淡（1色）。全体の最大値を基準に6段階 */
+function renderHeat(d) {
+  const key = state.metric;
+  const map = {};
+  let max = 0;
+  for (const r of d.heat) { const v = r[key] || 0; map[r.feature + ':' + r.hour] = v; if (v > max) max = v; }
+  const el = $('heat');
+  if (!max) { el.replaceChildren(h('div', { class: 'empty' }, 'この期間のデータはまだありません')); $('heat-table').replaceChildren(); return; }
+  const step = (v) => (v <= 0 ? 0 : Math.min(6, 1 + Math.floor((v / max) * 5.999)));
+  const g = h('div', { class: 'heat', role: 'img', 'aria-label': '時間帯と機能ごとの' + (key === 'sec' ? '利用時間' : '利用回数') });
+  const totals = {};
+  /* 回数は質問・問題作成・カード回答だけを数えるので、記録・設定の行は「時間」のときだけ出す */
+  const rows = key === 'sec' ? FEATURES : FEATURES.slice(0, 4);
+  for (const [f, label] of rows) {
+    g.append(h('div', { class: 'rl' }, label));
+    let tot = 0;
+    for (let hr = 0; hr < 24; hr++) {
+      const v = map[f + ':' + hr] || 0;
+      tot += v;
+      const c = h('div', { class: 'c', tabindex: v ? '0' : null });
+      const s = step(v);
+      if (s) c.style.background = 'var(--h' + s + ')';
+      hover(c, () => [metricLabel(v), label + '・' + hr + '時台']);
+      g.append(c);
+    }
+    totals[f] = tot;
+  }
+  g.append(h('div'));
+  for (let hr = 0; hr < 24; hr++) g.append(h('div', { class: 'hl num' }, hr % 3 === 0 ? String(hr) : ''));
+  const scale = h('div', { class: 'scale' }, '少',
+    [1, 2, 3, 4, 5, 6].map((i) => { const x = h('i'); x.style.background = 'var(--h' + i + ')'; return x; }),
+    '多（最大 ' + metricLabel(max) + '／1マス）');
+  el.replaceChildren(g, scale);
+  /* 表で見る（同じ値を数字で） */
+  const tb = h('tbody');
+  for (const [f, label] of rows) {
+    const tr = h('tr', null, h('td', { class: 'sticky1' }, label), h('td', { class: 'r num' }, metricLabel(totals[f])));
+    for (let hr = 0; hr < 24; hr++) { const v = map[f + ':' + hr] || 0; tr.append(h('td', { class: 'r num' }, v ? (key === 'sec' ? Math.round(v / 60) : v) : '')); }
+    tb.append(tr);
+  }
+  const hdr = h('tr', null, h('th', { class: 'sticky1' }, '機能'), h('th', { class: 'r' }, '合計'));
+  for (let hr = 0; hr < 24; hr++) hdr.append(h('th', { class: 'r' }, hr + '時'));
+  $('heat-table').replaceChildren(h('table', null, h('thead', null, hdr), tb), key === 'sec' ? h('p', { class: 'muted small' }, '時間帯の列は分') : null);
+}
+
+/* 縦棒（1系列）。幅は描画時の実寸に合わせる（文字が縮まないように） */
+function columns(el, days, values, opts) {
+  const W = Math.max(240, el.clientWidth || 300);
+  /* 右端の余白 padR は、最終日の日付ラベルが棒の真下に収まるための分 */
+  const H = opts.height, padL = opts.axis ? 30 : 0, padR = opts.axis ? 14 : 0, padB = opts.axis ? 20 : 0, padT = opts.axis ? 8 : 2;
+  const top = niceMax(Math.max(...values, 0));
+  const plotH = H - padT - padB;
+  const slot = (W - padL - padR) / days.length;
+  const bw = Math.max(1, Math.min(24, slot - 2));
+  const svg = sv('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img', 'aria-label': opts.label });
+  const baseY = padT + plotH;
+  if (opts.axis) {
+    svg.append(sv('line', { class: 'gl', x1: padL, x2: W - padR, y1: padT, y2: padT }));
+    svg.append(sv('text', { x: padL - 6, y: padT + 4, 'text-anchor': 'end', class: 'num', text: opts.fmtAxis(top) }));
+    svg.append(sv('text', { x: padL - 6, y: baseY + 4, 'text-anchor': 'end', text: '0' }));
+  }
+  days.forEach((day, i) => {
+    const v = values[i] || 0;
+    const x = padL + i * slot + (slot - bw) / 2;
+    const bh = (v / top) * plotH;
+    const g = sv('g', { tabindex: v ? '0' : null });
+    const hit = sv('rect', { class: 'hit', x: padL + i * slot, y: padT, width: slot, height: plotH + padB });
+    g.append(hit);
+    if (bh > 0) {
+      const r = Math.min(4, bw / 2, bh);
+      const y = baseY - bh;
+      g.append(sv('path', { class: 'bar', d: 'M' + x + ',' + baseY + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + y + ' ' + (x + bw) + ',' + (y + r) + 'V' + baseY + 'Z' }));
+    }
+    hover(g, () => [opts.fmtTip(v), shortDay(day) + '（' + '日月火水木金土'[new Date(day + 'T00:00:00Z').getUTCDay()] + '）']);
+    g.addEventListener('pointerenter', () => g.classList.add('on'));
+    g.addEventListener('pointerleave', () => g.classList.remove('on'));
+    svg.append(g);
+  });
+  svg.append(sv('line', { class: 'base', x1: padL, x2: W - padR, y1: baseY, y2: baseY }));
+  if (opts.axis) {
+    const ticks = days.length <= 7 ? days.map((_, i) => i) : [0, Math.floor((days.length - 1) / 2), days.length - 1];
+    for (const i of ticks) {
+      /* 日付は必ずその日の棒の真下（端だけ寄せると隣の棒の日付に見える） */
+      svg.append(sv('text', { x: padL + i * slot + slot / 2, y: H - 4, text: shortDay(days[i]), 'text-anchor': 'middle' }));
+    }
+  }
+  el.replaceChildren(svg);
+  return top;
+}
+
+function renderDau(d) {
+  const days = daysBetween(d.range.since, d.range.today);
+  const m = Object.fromEntries(d.dau.map((r) => [r.day, r.n]));
+  const vals = days.map((x) => m[x] || 0);
+  const el = $('dau');
+  if (!vals.some(Boolean)) { el.replaceChildren(h('div', { class: 'empty' }, 'この期間のデータはまだありません')); $('dau-table').replaceChildren(); return; }
+  columns(el, days, vals, { height: 170, axis: true, label: '日ごとの利用者数', fmtAxis: (v) => fmtInt(v), fmtTip: (v) => v + '人' });
+  const tb = h('tbody', null, days.slice().reverse().map((x, i) => h('tr', null, h('td', null, shortDay(x)), h('td', { class: 'r num' }, (vals[days.length - 1 - i]) + '人'))));
+  $('dau-table').replaceChildren(h('table', null, h('thead', null, h('tr', null, h('th', null, '日付'), h('th', { class: 'r' }, '利用者'))), tb));
+}
+
+/* 機能ごとの小さな棒グラフ。機能ごとに縦軸は別（最大値を右に明記） */
+function renderMult(d) {
+  const key = state.metric;
+  const days = daysBetween(d.range.since, d.range.today);
+  const by = {};
+  for (const r of d.daily) (by[r.feature] = by[r.feature] || {})[r.day] = r[key] || 0;
+  const wrap = h('div', { class: 'mult' });
+  let any = false;
+  for (const [f, label] of FEATURES.slice(0, 4)) {
+    const vals = days.map((x) => (by[f] && by[f][x]) || 0);
+    const total = vals.reduce((a, b) => a + b, 0);
+    if (total) any = true;
+    const cell = h('div');
+    wrap.append(h('div', { class: 'ml' }, label), cell, h('div', { class: 'mv num' }, key === 'sec' ? fmtDur(total) : fmtInt(total) + '回'));
+    requestAnimationFrame(() => columns(cell, days, vals, { height: 40, axis: false, label: label + 'の日別', fmtTip: (v) => label + ' ' + metricLabel(v) }));
+  }
+  $('multNote').textContent = key === 'sec' ? '期間合計の時間。縦軸は機能ごと' : '期間合計の回数。縦軸は機能ごと';
+  $('mult').replaceChildren(any ? wrap : h('div', { class: 'empty' }, 'この期間のデータはまだありません'));
+}
+
+function renderUsers(d) {
+  if (!d.users.length) { $('users').replaceChildren(h('div', { class: 'empty' }, 'この期間に使った人はまだいません')); return; }
+  const th = (t, r) => h('th', { class: r ? 'r' : null }, t);
+  const head = h('tr', null, h('th', { class: 'sticky1' }, '利用者'), th('端末'), th('初回'), th('最終'), th('日数', 1), th('滞在', 1), th('質問', 1),
+    th('テスト', 1), th('正答率', 1), th('カード', 1), th('AI', 1), th('費用', 1), th('エラー', 1));
+  const tb = h('tbody');
+  for (const u of d.users) {
+    const tr = h('tr', { class: 'click' + (u.uid === state.selUid ? ' sel' : ''), tabindex: '0' },
+      h('td', { class: 'sticky1' }, h('span', { class: 'num' }, u.uid), u.tier === 'owner' ? h('span', { class: 'tag' }, '本人') : null),
+      h('td', null, deviceLabel(u.device)),
+      h('td', { class: 'num' }, u.first_ts ? fmtTs(u.first_ts) : '-'),
+      h('td', { class: 'num' }, u.last_ts ? fmtTs(u.last_ts) : '-'),
+      h('td', { class: 'r num' }, u.days), h('td', { class: 'r num' }, fmtDur(u.sec)), h('td', { class: 'r num' }, u.asks),
+      h('td', { class: 'r num' }, u.tests), h('td', { class: 'r num' }, pct(u.acc)), h('td', { class: 'r num' }, u.cards),
+      h('td', { class: 'r num' }, u.calls), h('td', { class: 'r num' }, fmtYen(u.cost)),
+      h('td', { class: 'r num' }, u.errs ? h('span', { class: 'err' }, '✕ ' + u.errs) : '0'));
+    const open = () => openTimeline(u.uid);
+    tr.addEventListener('click', open);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    tb.append(tr);
+  }
+  $('users').replaceChildren(h('div', { class: 'tablewrap' }, h('table', null, h('thead', null, head), tb)));
+}
+
+/* 1人分の時系列 */
+function describe(it) {
+  const dd = parseJSON(it.data) || {};
+  if (it.src === 'ai') {
+    return { k: 'AI：' + (AI_FEATURE[it.feature] || it.feature), d: [it.model, it.ms != null ? (it.ms / 1000).toFixed(1) + '秒' : null, it.cost ? fmtYen(it.cost) : null,
+      it.tok_reason ? '推論 ' + fmtInt(it.tok_reason) + 'tok' : null].filter(Boolean).join('・'), err: it.status >= 400 ? (it.status + ' ' + (it.err || '')) : null, q: it.q };
+  }
+  const mode = dd.mode === 'listen' ? 'リスニング' : dd.mode === 'reading' ? '読解' : '';
+  const bucket = dd.bucket ? (dd.mode === 'listen' ? LISTEN[dd.bucket - 1] : READING[dd.bucket - 1]) || ('分野' + dd.bucket) : '';
+  let d = '';
+  switch (it.kind) {
+    case 'dwell': d = (FEATURE_LABEL[it.feature] || '') + ' ' + fmtDur(it.n); break;
+    case 'fg': d = fmtDur(it.n); break;
+    case 'tab': d = FEATURE_LABEL[it.feature] || ''; break;
+    case 'open': d = deviceLabel(dd) + (dd.items != null ? '・カード' + dd.items + '枚' : ''); break;
+    case 'ask': d = (dd.mode === 'deep' ? '英文解説' : '単語・熟語') + '・' + (it.n || 0) + '文字・カード+' + (dd.cards || 0); break;
+    case 'gen': d = [mode, bucket ? bucket + (dd.hard ? '（難問）' : '') : null, it.n != null ? (it.n / 1000).toFixed(1) + '秒' : null].filter(Boolean).join('・'); break;
+    case 'test': d = [mode, bucket, dd.total != null ? dd.score + '/' + dd.total : null, dd.sec != null ? fmtDur(dd.sec) : null, dd.plays ? '再生' + dd.plays + '回' : null].filter(Boolean).join('・'); break;
+    case 'card': d = (it.n ? '○' : '×') + (dd.from != null ? '・箱' + dd.from + (dd.to != null ? '→' + dd.to : '') : '') + (dd.timeout ? '・時間切れ' : '') + (dd.sec != null ? '・' + dd.sec + '秒' : ''); break;
+    case 'card_set': d = '○' + (dd.ok || 0) + ' ×' + (dd.ng || 0); break;
+    case 'play': d = it.n + '回目'; break;
+    case 'setting': d = (SETTING[dd.key] || dd.key || '') + '：' + (dd.on != null ? (dd.on ? 'オン' : 'オフ') : dd.v != null ? dd.v : it.n); break;
+    case 'backup': d = dd.op === 'import' ? '復元' : '書き出し'; break;
+    case 'ask_err': case 'gen_err': case 'js_err': d = dd.msg || ''; break;
+    default: d = it.data ? String(it.data).slice(0, 120) : '';
+  }
+  return { k: KIND[it.kind] || it.kind, d: d, err: /_err$/.test(it.kind) ? d : null };
+}
+async function openTimeline(uid) {
+  state.selUid = uid;
+  document.querySelectorAll('#users tbody tr').forEach((tr) => tr.classList.toggle('sel', tr.querySelector('.num').textContent === uid));
+  const box = $('timeline');
+  box.hidden = false;
+  box.replaceChildren(h('div', { class: 'muted' }, '読み込み中…'));
+  try {
+    const r = await api({ view: 'user', uid: uid });
+    const head = h('div', { class: 'bh' }, h('h2', null, uid, r.user && r.user.tier === 'owner' ? h('span', { class: 'tag' }, '本人') : null),
+      h('button', { class: 'linkbtn', onclick: () => { box.hidden = true; state.selUid = null; document.querySelectorAll('#users tr.sel').forEach((x) => x.classList.remove('sel')); } }, '閉じる'));
+    const meta = h('div', { class: 'muted small' }, r.user ? deviceLabel(r.user.device) + '・初回 ' + fmtTs(r.user.first_ts) + '・最終 ' + fmtTs(r.user.last_ts) + '・最新 ' + r.items.length + '件' : '');
+    const list = h('div');
+    let lastDay = '';
+    for (const it of r.items) {
+      const day = fmtDate(it.ts);
+      if (day !== lastDay) { list.append(h('div', { class: 'day' }, day)); lastDay = day; }
+      const x = describe(it);
+      list.append(h('div', { class: 'it' }, h('div', { class: 'tm num' }, fmtTime(it.ts)),
+        h('div', null, h('span', { class: 'k' }, x.k), x.d && !x.err ? h('span', { class: 'd' }, '　' + x.d) : null,
+          x.err ? h('div', { class: 'err small' }, '✕ ' + x.err) : null,
+          x.q ? h('div', { class: 'q' }, x.q.slice(0, 160)) : null)));
+    }
+    box.replaceChildren(head, meta, r.items.length ? list : h('div', { class: 'empty' }, '記録がありません'));
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    box.replaceChildren(h('div', { class: 'err' }, '読み込めませんでした：' + e.message));
+  }
+}
+
+function renderBuckets(d) {
+  const group = (mode, names, title) => {
+    const rows = d.buckets.filter((b) => b.mode === mode && b.total > 0);
+    const done = new Set(rows.map((b) => b.bucket));
+    const box = h('div', { class: 'hbars' });
+    rows.sort((a, b) => a.score / a.total - b.score / b.total);
+    for (const b of rows) {
+      const acc = b.score / b.total;
+      const bar = h('b');
+      bar.style.width = Math.max(1, acc * 100) + '%';
+      const row = h('div', { class: 'hb', tabindex: '0' }, h('div', { class: 'n' }, b.bucket + '. ' + (names[b.bucket - 1] || '')), h('div', { class: 't' }, bar),
+        h('div', { class: 'v num' }, pct(acc) + '（' + b.total + '問）'));
+      hover(row, () => [pct(acc), (names[b.bucket - 1] || '') + '・' + b.tests + '回・' + b.score + '/' + b.total + '問正解']);
+      box.append(row);
+    }
+    const untouched = names.map((n, i) => i + 1).filter((i) => !done.has(i));
+    return [h('div', { class: 'sub2' }, title + (rows.length ? '（正答率の低い順）' : '')),
+      rows.length ? box : h('div', { class: 'muted small' }, 'この期間の採点はまだありません'),
+      rows.length && untouched.length ? h('div', { class: 'muted small', style: 'margin-top:6px' }, '未出題：' + untouched.join('・')) : null];
+  };
+  $('buckets').replaceChildren(h('div', { class: 'grid2' }, h('div', null, group('reading', READING, '読解（20分野）')), h('div', null, group('listen', LISTEN, 'リスニング（6形式）'))));
+}
+
+function renderAi(d) {
+  if (!d.ai.length) { $('ai').replaceChildren(h('div', { class: 'empty' }, 'この期間の呼び出しはまだありません')); return; }
+  const th = (t, r) => h('th', { class: r ? 'r' : null }, t);
+  const head = h('tr', null, h('th', { class: 'sticky1' }, '機能'), th('区分'), th('モデル'), th('回数', 1), th('平均', 1), th('入力tok', 1), th('出力tok', 1), th('うち推論', 1), th('費用', 1), th('エラー', 1));
+  const tb = h('tbody', null, d.ai.map((r) => h('tr', null,
+    h('td', { class: 'sticky1' }, AI_FEATURE[r.feature] || r.feature), h('td', null, r.tier === 'owner' ? '本人' : 'テスター'), h('td', null, r.model),
+    h('td', { class: 'r num' }, fmtInt(r.calls)), h('td', { class: 'r num' }, r.avgMs == null ? '-' : (r.avgMs / 1000).toFixed(1) + '秒'),
+    h('td', { class: 'r num' }, fmtInt(r.tokIn)), h('td', { class: 'r num' }, fmtInt(r.tokOut)), h('td', { class: 'r num' }, fmtInt(r.tokReason)),
+    h('td', { class: 'r num' }, fmtYen(r.cost)), h('td', { class: 'r num' }, r.errs ? h('span', { class: 'err' }, '✕ ' + r.errs) : '0'))));
+  $('ai').replaceChildren(h('div', { class: 'tablewrap' }, h('table', null, h('thead', null, head), tb)));
+}
+
+function renderErrors(d) {
+  const ai = h('div', { class: 'errlist' }, h('div', { class: 'sub2' }, 'AIの呼び出し'),
+    d.errors.ai.length ? d.errors.ai.map((e) => h('div', { class: 'e' }, h('span', { class: 'x' }, '✕ ' + e.status),
+      h('span', { class: 'num muted' }, fmtTs(e.ts) + '・' + e.uid + '・'), (AI_FEATURE[e.feature] || e.feature) + '・' + e.model,
+      h('div', { class: 'muted small' }, e.err || ''))) : h('div', { class: 'muted small' }, 'ありません'));
+  const app = h('div', { class: 'errlist' }, h('div', { class: 'sub2' }, 'アプリ'),
+    d.errors.app.length ? d.errors.app.map((e) => { const dd = parseJSON(e.data) || {}; return h('div', { class: 'e' }, h('span', { class: 'x' }, '✕'),
+      h('span', { class: 'num muted' }, fmtTs(e.ts) + '・' + e.uid + '・'), KIND[e.kind] || e.kind,
+      h('div', { class: 'muted small' }, (dd.msg || '') + (dd.line ? '（' + dd.src + ':' + dd.line + '）' : ''))); }) : h('div', { class: 'muted small' }, 'ありません'));
+  $('errors').replaceChildren(ai, app);
+}
+
+/* 質問と回答。単語モードの回答は JSON なので解説部分を取り出して表示する */
+function answerText(r) {
+  const j = r.feature === 'ask_vocab' ? parseJSON(r.a) : null;
+  if (j && typeof j === 'object') {
+    const items = Array.isArray(j.items) ? j.items.map((x) => x && x.front).filter(Boolean) : [];
+    return String(j.explanation || '') + (items.length ? '\n［カード］' + items.join('、') : '');
+  }
+  return r.a || '';
+}
+async function loadQa(reset) {
+  if (reset) { state.qa.next = null; $('qa').replaceChildren(); }
+  const offset = reset ? 0 : state.qa.next || 0;
+  try {
+    const r = await api({ view: 'qa', search: state.qa.search, offset: offset, owner: state.owner });
+    for (const x of r.rows) {
+      const a = h('div', { class: 'a', title: 'タップで全文', onclick: (e) => e.currentTarget.classList.toggle('open') }, answerText(x));
+      $('qa').append(h('div', { class: 'qi' },
+        h('div', { class: 'm num' }, fmtTs(x.ts) + '・' + x.uid + (x.tier === 'owner' ? '（本人）' : '') + '・' + (AI_FEATURE[x.feature] || x.feature) + '・' + x.model),
+        h('div', { class: 'q' }, x.q), a));
+    }
+    if (!$('qa').children.length) $('qa').append(h('div', { class: 'empty' }, state.qa.search ? '見つかりませんでした' : 'まだ質問がありません'));
+    state.qa.next = r.next;
+    $('qaMore').hidden = r.next == null;
+  } catch (e) {
+    $('qa').append(h('div', { class: 'err' }, '読み込めませんでした：' + e.message));
+  }
+}
+
+function renderAll() {
+  const d = state.data;
+  if (!d) return;
+  renderKpis(d.kpi);
+  renderHeat(d);
+  renderDau(d);
+  renderMult(d);
+  renderUsers(d);
+  renderBuckets(d);
+  renderAi(d);
+  renderErrors(d);
+}
+
+/* ================= 読み込み ================= */
+async function load() {
+  const main = $('main');
+  if (state.data) main.classList.add('busy'); else $('loading').hidden = false; // 再読み込み中は前の表示を薄くして保つ
+  $('banner').hidden = true;
+  try {
+    state.data = await api({ view: 'summary', days: state.days, owner: state.owner });
+    main.hidden = false;
+    $('filters').hidden = false;
+    $('reload').hidden = false;
+    $('conn').hidden = true;
+    $('updated').textContent = '・' + shortDay(state.data.range.since) + '〜' + shortDay(state.data.range.today) + '・' +
+      new Date().toLocaleTimeString('ja-JP', Object.assign({ hour: '2-digit', minute: '2-digit' }, TZ)) + ' 更新';
+    renderAll();
+    loadQa(true);
+    if (state.selUid) openTimeline(state.selUid);
+  } catch (e) {
+    if (e instanceof AuthError || !state.data) {
+      showConn(e.message);
+    } else {
+      $('banner').textContent = '読み込めませんでした：' + e.message;
+      $('banner').hidden = false;
+    }
+  } finally {
+    main.classList.remove('busy');
+    $('loading').hidden = true;
+  }
+}
+
+/* ================= CSV ================= */
+function csvCell(v) {
+  if (v == null) return '';
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+async function exportCsv(table, btn) {
+  const msg = $('csvMsg');
+  btn.disabled = true;
+  try {
+    const rows = [];
+    let after = 0;
+    for (;;) {
+      const r = await api({ view: 'export', table: table, after: after });
+      rows.push(...r.rows);
+      msg.textContent = table + '：' + fmtInt(rows.length) + '行…';
+      if (r.next == null) break;
+      after = r.next;
+    }
+    const cols = [];
+    for (const r of rows) for (const k in r) if (cols.indexOf(k) < 0) cols.push(k);
+    const tsCol = cols.indexOf('ts') >= 0 ? 'ts' : cols.indexOf('last_ts') >= 0 ? 'last_ts' : null;
+    const jst = (ts) => new Date(ts + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 19);
+    const head = (tsCol ? ['jst'] : []).concat(cols);
+    const lines = [head.join(',')];
+    for (const r of rows) lines.push((tsCol ? [r[tsCol] ? jst(r[tsCol]) : ''] : []).concat(cols.map((c) => r[c])).map(csvCell).join(','));
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: 'eigo-' + table + '-' + new Date().toISOString().slice(0, 10) + '.csv' });
+    document.body.append(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    msg.textContent = table + '：' + fmtInt(rows.length) + '行を書き出しました';
+  } catch (e) {
+    msg.textContent = '書き出せませんでした：' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ================= 操作 ================= */
+function showConn(err) {
+  $('conn').hidden = false;
+  $('cUrl').value = conn.url;
+  $('cKey').value = conn.key;
+  $('cRemember').checked = !!lsGet('localStorage', K_KEY);
+  $('cErr').textContent = err || '';
+}
+function syncFilters() {
+  document.querySelectorAll('#fDays button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.v) === state.days)));
+  document.querySelectorAll('#fMetric button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === state.metric)));
+  $('fOwner').checked = !!state.owner;
+}
+$('cGo').addEventListener('click', () => {
+  conn.url = $('cUrl').value.trim();
+  conn.key = $('cKey').value.trim();
+  if (!conn.url || !conn.key) { $('cErr').textContent = 'Worker URL と ADMIN_KEY を入力してください'; return; }
+  lsSet('localStorage', K_URL, conn.url);
+  const remember = $('cRemember').checked;
+  lsSet('localStorage', K_KEY, remember ? conn.key : null);
+  lsSet('sessionStorage', K_KEY, remember ? null : conn.key);
+  state.data = null;
+  load();
+});
+$('cForget').addEventListener('click', () => {
+  lsSet('localStorage', K_KEY, null);
+  lsSet('sessionStorage', K_KEY, null);
+  conn.key = '';
+  $('cKey').value = '';
+  $('cErr').textContent = 'この端末から ADMIN_KEY を消しました';
+});
+$('openConn').addEventListener('click', () => { if ($('conn').hidden) showConn(''); else $('conn').hidden = true; });
+$('reload').addEventListener('click', load);
+$('fDays').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.days = Number(b.dataset.v); savePref(); syncFilters(); load();
+});
+$('fMetric').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.metric = b.dataset.v; savePref(); syncFilters();
+  if (state.data) { renderHeat(state.data); renderMult(state.data); }
+});
+$('fOwner').addEventListener('change', () => { state.owner = $('fOwner').checked ? 1 : 0; savePref(); load(); });
+document.querySelectorAll('[data-table]').forEach((b) => b.addEventListener('click', () => {
+  const t = $(b.dataset.table + '-table');
+  t.hidden = !t.hidden;
+  b.textContent = t.hidden ? '表で見る' : '表を閉じる';
+}));
+let qaT = null;
+$('qaSearch').addEventListener('input', () => {
+  clearTimeout(qaT);
+  qaT = setTimeout(() => { state.qa.search = $('qaSearch').value.trim(); loadQa(true); }, 300);
+});
+$('qaMore').addEventListener('click', () => loadQa(false));
+document.querySelectorAll('[data-csv]').forEach((b) => b.addEventListener('click', () => exportCsv(b.dataset.csv, b)));
+let rsT = null, lastW = window.innerWidth;
+window.addEventListener('resize', () => {
+  if (window.innerWidth === lastW) return; // スマホのアドレスバー伸縮では描き直さない
+  lastW = window.innerWidth;
+  clearTimeout(rsT);
+  rsT = setTimeout(() => { if (state.data) { renderDau(state.data); renderMult(state.data); } }, 150);
+});
+
+syncFilters();
+if (conn.url && conn.key) load(); else showConn('');
+</script>
+</body>
+</html>
