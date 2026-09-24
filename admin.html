@@ -90,8 +90,6 @@ button{cursor:pointer}
 /* 数字4桁のパスワード（上の .field input より後に置き、同じ詳細度で上書きする） */
 .field input.pinin{font-size:26px;letter-spacing:.6em;text-align:center;padding-left:calc(12px + .6em);max-width:220px;font-variant-numeric:tabular-nums}
 .field input.pinin:disabled{opacity:.5}
-.pinrow{display:flex;gap:8px}
-.pinrow input{flex:1;min-width:0}
 .err{color:var(--crit);font-weight:600}
 .banner{margin:12px 0;padding:10px 14px;border-radius:var(--rs);background:var(--fill);font-weight:600}
 
@@ -233,17 +231,13 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
     </div>
     <label class="chk" style="margin-top:12px"><input type="checkbox" id="cRemember">この端末に記憶する（オフならタブを閉じると消えます）</label>
     <div class="field">
-      <label for="cPin">パスワード（数字4桁・任意）</label>
-      <p id="cPinState" class="muted small" style="margin:0"></p>
-      <div class="pinrow">
-        <input type="password" id="cPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="新しい4桁" aria-label="新しい4桁のパスワード">
-        <input type="password" id="cPin2" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="もう一度" aria-label="確認のためもう一度">
-      </div>
+      <label for="cPin">パスワード（数字4桁）</label>
+      <input type="password" id="cPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" style="max-width:160px">
+      <p class="muted small" style="margin:0">Worker に SETTINGS_PIN を設定している時だけ必要。端末には残さず、タブを閉じると消えます。</p>
     </div>
     <div class="row" style="margin-top:14px">
       <button id="cGo" class="btn primary">接続</button>
       <button id="cForget" class="btn">この端末から消す</button>
-      <button id="cPinClear" class="btn" hidden>パスワードを解除</button>
     </div>
     <div id="cErr" class="err small" style="margin-top:10px"></div>
   </section>
@@ -348,86 +342,6 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 
 <script>
 'use strict';
-/* === pin-lock:start === */
-/* 接続設定を守る数字4桁のパスワード。5回間違えると1時間ロック。
-   アプリ（index.html）と管理画面（admin.html）に同一内容で置く（test/pin-lock.test.js が一致を検査）。
-   DOM に触れない。平文は保存せず、digest(salt + ':' + pin) だけを保存する。
-   守れるのは「端末を触った他人」から。端末内の保存領域を直接読める人・時計を進める人は防げない。 */
-var PL = (function () {
-  'use strict';
-  var MAX_TRIES = 5;
-  var LOCK_MS = 3600000;
-
-  function valid(pin) { return /^\d{4}$/.test(String(pin)); }
-
-  function create(o) {
-    function load() {
-      try {
-        var v = JSON.parse(o.storage.getItem(o.key) || 'null');
-        return v && typeof v.hash === 'string' && typeof v.salt === 'string' ? v : null;
-      } catch (e) { return null; }
-    }
-    function save(v) {
-      try { if (v) o.storage.setItem(o.key, JSON.stringify(v)); else o.storage.removeItem(o.key); } catch (e) {}
-    }
-    function status() {
-      var v = load();
-      if (!v) return { set: false, locked: false, until: 0, remaining: MAX_TRIES };
-      var locked = (v.until || 0) > o.now();
-      var fails = locked ? MAX_TRIES : (v.until ? 0 : (v.fails || 0)); // 期限切れのロックは回数ごと解ける
-      return { set: true, locked: locked, until: locked ? v.until : 0, remaining: MAX_TRIES - fails };
-    }
-    function set(pin) {
-      if (!valid(pin)) return Promise.reject(new Error('数字4桁で入力してください'));
-      var salt = '';
-      for (var i = 0; i < 16; i++) salt += Math.floor(o.rand() * 16).toString(16);
-      return o.digest(salt + ':' + pin).then(function (hash) {
-        save({ v: 1, salt: salt, hash: hash, fails: 0, until: 0 });
-      });
-    }
-    function clear() { save(null); }
-    function verify(pin) {
-      var v = load();
-      if (!v) return Promise.resolve({ ok: true, locked: false, until: 0, remaining: MAX_TRIES });
-      var now = o.now();
-      if (v.until && v.until > now) return Promise.resolve({ ok: false, locked: true, until: v.until, remaining: 0 });
-      if (v.until) { v.until = 0; v.fails = 0; } // ロックが明けたらまた5回試せる
-      /* 4桁の数字でない入力は打ち間違いとみなし、回数に数えない */
-      if (!valid(pin)) return Promise.resolve({ ok: false, locked: false, until: 0, remaining: MAX_TRIES - (v.fails || 0), invalid: true });
-      return o.digest(v.salt + ':' + pin).then(function (hash) {
-        if (hash === v.hash) {
-          v.fails = 0; v.until = 0; save(v);
-          return { ok: true, locked: false, until: 0, remaining: MAX_TRIES };
-        }
-        v.fails = (v.fails || 0) + 1;
-        if (v.fails >= MAX_TRIES) {
-          v.fails = 0; v.until = now + LOCK_MS; save(v);
-          return { ok: false, locked: true, until: v.until, remaining: 0 };
-        }
-        save(v);
-        return { ok: false, locked: false, until: 0, remaining: MAX_TRIES - v.fails };
-      });
-    }
-    return { isSet: function () { return !!load(); }, status: status, set: set, clear: clear, verify: verify };
-  }
-
-  /* SHA-256（16進）。crypto.subtle が使えない環境（http の非 localhost 等）では簡易ハッシュで代用する */
-  function sha256(s) {
-    try {
-      if (typeof crypto !== 'undefined' && crypto.subtle && typeof TextEncoder !== 'undefined') {
-        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (b) {
-          return Array.prototype.map.call(new Uint8Array(b), function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
-        });
-      }
-    } catch (e) {}
-    var h = 2166136261;
-    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-    return Promise.resolve('fnv' + h.toString(16));
-  }
-
-  return { create: create, sha256: sha256, valid: valid, MAX_TRIES: MAX_TRIES, LOCK_MS: LOCK_MS };
-})();
-/* === pin-lock:end === */
 /* ================= 定数 ================= */
 const YEN = 155;
 const FEATURES = [['ask', '質問'], ['reading', '読解'], ['listen', 'リスニング'], ['cards', '単語'], ['records', '記録'], ['settings', '設定']];
@@ -510,12 +424,13 @@ function niceMax(m) {
 }
 
 /* ================= 保存（この端末だけの便利機能） ================= */
-const K_URL = 'eigo-admin:url', K_KEY = 'eigo-admin:key', K_PREF = 'eigo-admin:pref';
+const K_URL = 'eigo-admin:url', K_KEY = 'eigo-admin:key', K_PREF = 'eigo-admin:pref', K_PIN = 'eigo-admin:pin';
 function lsGet(store, k) { try { return window[store].getItem(k); } catch (e) { return null; } }
 function lsSet(store, k, v) { try { if (v == null) window[store].removeItem(k); else window[store].setItem(k, v); } catch (e) {} }
 const conn = {
   url: lsGet('localStorage', K_URL) || '',
   key: lsGet('sessionStorage', K_KEY) || lsGet('localStorage', K_KEY) || '',
+  pin: lsGet('sessionStorage', K_PIN) || '', // Worker の SETTINGS_PIN。端末には残さない（タブを閉じれば消える）
 };
 const pref = parseJSON(lsGet('localStorage', K_PREF)) || {};
 const state = {
@@ -536,10 +451,19 @@ function base() {
   return u.replace(/\/+$/, '');
 }
 class AuthError extends Error {}
-async function api(params) {
-  const res = await fetch(base() + '/admin/api?' + new URLSearchParams(params), { headers: { 'x-admin-key': conn.key } });
+/* Worker が4桁を求めた（pin_required / pin_wrong / pin_locked） */
+class PinError extends Error {
+  constructor(e) { super(e.message); this.code = e.code; this.until = e.until || 0; this.remaining = e.remaining; }
+}
+let pinEnabled = !!conn.pin; // この Worker が4桁を求めるか（求められたら true）
+async function api(params, pinOverride) {
+  const headers = { 'x-admin-key': conn.key };
+  if (conn.pin) headers['x-admin-pin'] = conn.pin;
+  if (pinOverride) headers['x-admin-pin'] = pinOverride;
+  const res = await fetch(base() + '/admin/api?' + new URLSearchParams(params), { headers: headers });
   let d = null;
   try { d = await res.json(); } catch (e) {}
+  if (d && d.error && /^pin_(required|wrong|locked)$/.test(d.error.code || '')) { pinEnabled = true; throw new PinError(d.error); }
   if (res.status === 401) throw new AuthError('ADMIN_KEY が違います');
   if (!res.ok || !d || d.error) throw new Error((d && d.error && d.error.message) || ('HTTP ' + res.status));
   return d;
@@ -909,7 +833,9 @@ async function load() {
     loadQa(true);
     if (state.selUid) openTimeline(state.selUid);
   } catch (e) {
-    if (e instanceof AuthError || !state.data) {
+    if (e instanceof PinError) {
+      lockView(e); // 4桁を聞いてから読み込み直す
+    } else if (e instanceof AuthError || !state.data) {
       showConn(e.message);
     } else {
       $('banner').textContent = '読み込めませんでした：' + e.message;
@@ -960,84 +886,84 @@ async function exportCsv(table, btn) {
   }
 }
 
-/* ================= 数字4桁のパスワード =================
-   設定すると ADMIN_KEY を端末に記憶し、開くたびに4桁で解錠する。5回間違えると1時間ロック。
-   5分以上画面から離れて戻ったら再ロック（開いたまま端末を渡した時に利用データを見せない）。 */
-const PIN = PL.create({ storage: localStorage, key: 'eigo-admin:pin', now: Date.now, digest: PL.sha256,
-  rand: () => { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } } });
+/* ================= 数字4桁のパスワード（Worker の SETTINGS_PIN） =================
+   Worker が4桁を有効にしていれば、ADMIN_KEY に加えて4桁も必要（端末に記憶した ADMIN_KEY だけでは見られない）。
+   照合と失敗回数（5回で1時間ロック）は Worker 側。4桁は sessionStorage にだけ置き、5分以上離れて戻ったら忘れて聞き直す。 */
 const RELOCK_MS = 5 * 60 * 1000;
 const pinClock = (ts) => { const d = new Date(ts); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
-const pinLockedMsg = (until) => PL.MAX_TRIES + '回間違えたため、' + pinClock(until) + ' まで開けません';
+const pinLockedMsg = (until) => '5回間違えたため、' + pinClock(until) + ' まで開けません';
+function forgetPin() { conn.pin = ''; lsSet('sessionStorage', K_PIN, null); }
 
-/* パスワードが設定されていれば入力を求める。通れば true、やめたら false。未設定なら即 true */
-function requirePin(title, cancellable) {
-  if (!PIN.isSet()) return Promise.resolve(true);
+/* 4桁を聞き、Worker（view=ping）で確かめる。通れば true、やめたら false。initial は直前の PinError */
+function requirePin(title, cancellable, initial) {
   return new Promise((resolve) => {
     const box = $('lock'), inp = $('lockIn'), msg = $('lockMsg'), ok = $('lockOk'), cancel = $('lockCancel');
     $('lockTitle').textContent = title;
     inp.value = ''; msg.textContent = ''; msg.className = 'small';
     cancel.hidden = !cancellable;
     let relockT = null;
-    const sync = () => {
-      const st = PIN.status();
-      inp.disabled = st.locked; ok.disabled = st.locked;
+    /* ロック中は入力を止め、明けたら自動で戻す（開いたまま待っていても入力できるように） */
+    const show = (locked, until) => {
       clearTimeout(relockT);
-      if (st.locked) {
+      inp.disabled = locked; ok.disabled = locked;
+      if (locked) {
         inp.value = '';
-        msg.textContent = pinLockedMsg(st.until); msg.className = 'small err';
-        /* 開いたまま待っていても、ロックが明けたら入力できるようにする */
-        relockT = setTimeout(() => { msg.textContent = ''; sync(); if (!inp.disabled) inp.focus(); }, st.until - Date.now() + 500);
+        msg.textContent = pinLockedMsg(until); msg.className = 'small err';
+        relockT = setTimeout(() => { msg.textContent = ''; show(false); inp.focus(); }, until - Date.now() + 500);
       }
     };
     const done = (v) => { clearTimeout(relockT); box.hidden = true; ok.onclick = null; cancel.onclick = null; inp.onkeydown = null; resolve(v); };
-    sync();
+    show(!!(initial && initial.code === 'pin_locked'), initial ? initial.until : 0);
+    if (initial && initial.code === 'pin_wrong') { msg.textContent = initial.message; msg.className = 'small err'; }
     box.hidden = false;
     if (!inp.disabled) setTimeout(() => inp.focus(), 60);
     ok.onclick = async () => {
       if (ok.disabled) return;
+      const v = inp.value.trim();
+      if (!/^\d{4}$/.test(v)) { msg.textContent = '数字4桁で入力してください'; msg.className = 'small err'; inp.value = ''; return; }
       ok.disabled = true;
-      const r = await PIN.verify(inp.value.trim());
-      if (r.ok) { done(true); return; }
-      inp.value = '';
-      msg.className = 'small err';
-      msg.textContent = r.invalid ? '数字4桁で入力してください' : r.locked ? pinLockedMsg(r.until) : 'パスワードが違います（あと' + r.remaining + '回）';
-      sync();
-      if (!inp.disabled) inp.focus();
+      try {
+        await api({ view: 'ping' }, v);
+        conn.pin = v;
+        lsSet('sessionStorage', K_PIN, v);
+        done(true);
+      } catch (e) {
+        ok.disabled = false; inp.value = ''; msg.className = 'small err';
+        if (e instanceof PinError) {
+          if (e.code === 'pin_locked') show(true, e.until); else msg.textContent = e.message;
+        } else if (e instanceof AuthError) {
+          done(false); showConn(e.message); // ADMIN_KEY 自体が違う → 接続設定へ
+          return;
+        } else {
+          msg.textContent = '確かめられませんでした：' + e.message;
+        }
+        if (!inp.disabled) inp.focus();
+      }
     };
     cancel.onclick = () => done(false);
     inp.onkeydown = (e) => { if (e.key === 'Enter') ok.onclick(); };
   });
 }
 
-/* 利用状況を隠して、解錠するまで出さない（起動時と、5分以上離れて戻った時） */
+/* 利用状況を隠して、4桁で解錠するまで出さない（Worker に求められた時と、5分以上離れて戻った時） */
 let viewLocked = false;
-async function lockView() {
+async function lockView(err) {
   if (viewLocked) return;
   viewLocked = true;
   ['main', 'filters', 'reload', 'openConn', 'conn', 'banner'].forEach((id) => { $(id).hidden = true; });
   hideTip();
-  if (!(await requirePin('利用状況を開く', false))) return;
+  const ok = await requirePin('利用状況を開く', false, err);
   viewLocked = false;
   $('openConn').hidden = false;
-  load();
+  if (ok) load();
 }
 let hiddenAt = 0;
 function relockOnReturn() {
   if (document.hidden) { hiddenAt = Date.now(); return; }
-  if (PIN.isSet() && conn.key && hiddenAt && Date.now() - hiddenAt >= RELOCK_MS) lockView();
+  if (pinEnabled && conn.key && hiddenAt && Date.now() - hiddenAt >= RELOCK_MS) { forgetPin(); lockView(); }
   hiddenAt = 0;
 }
 document.addEventListener('visibilitychange', relockOnReturn);
-
-function renderPinState() {
-  const set = PIN.isSet();
-  $('cPinState').textContent = set
-    ? '設定済み。ADMIN_KEY をこの端末に記憶し、開くたびに数字4桁で解錠します（' + PL.MAX_TRIES + '回間違えると1時間ロック。5分以上離れると再ロック）。変える時は新しい4桁を2回入れて「接続」。'
-    : '未設定。設定すると ADMIN_KEY をこの端末に記憶し、開くたびに数字4桁で解錠します（' + PL.MAX_TRIES + '回間違えると1時間ロック）。';
-  $('cPinClear').hidden = !set;
-  $('cRemember').disabled = set; // パスワードを使うなら記憶は必須
-  if (set) $('cRemember').checked = true;
-}
 
 /* ================= 操作 ================= */
 function showConn(err) {
@@ -1045,8 +971,7 @@ function showConn(err) {
   $('cUrl').value = conn.url;
   $('cKey').value = conn.key;
   $('cRemember').checked = !!lsGet('localStorage', K_KEY);
-  $('cPin').value = ''; $('cPin2').value = '';
-  renderPinState();
+  $('cPin').value = '';
   $('cErr').textContent = err || '';
 }
 function syncFilters() {
@@ -1058,15 +983,12 @@ $('cGo').addEventListener('click', async () => {
   conn.url = $('cUrl').value.trim();
   conn.key = $('cKey').value.trim();
   if (!conn.url || !conn.key) { $('cErr').textContent = 'Worker URL と ADMIN_KEY を入力してください'; return; }
-  const p1 = $('cPin').value.trim(), p2 = $('cPin2').value.trim();
-  if (p1 || p2) {
-    if (!PL.valid(p1)) { $('cErr').textContent = 'パスワードは数字4桁で入力してください'; return; }
-    if (p1 !== p2) { $('cErr').textContent = 'パスワードは2回とも同じ4桁を入力してください'; return; }
-    await PIN.set(p1);
-    $('cPin').value = ''; $('cPin2').value = '';
-  }
+  const p = $('cPin').value.trim();
+  if (p && !/^\d{4}$/.test(p)) { $('cErr').textContent = 'パスワードは数字4桁で入力してください'; return; }
+  if (p) { conn.pin = p; lsSet('sessionStorage', K_PIN, p); } // 空なら今の値を保つ（Worker が求めれば解錠パネルで聞く）
+  $('cPin').value = '';
   lsSet('localStorage', K_URL, conn.url);
-  const remember = $('cRemember').checked || PIN.isSet();
+  const remember = $('cRemember').checked;
   lsSet('localStorage', K_KEY, remember ? conn.key : null);
   lsSet('sessionStorage', K_KEY, remember ? null : conn.key);
   state.data = null;
@@ -1075,21 +997,16 @@ $('cGo').addEventListener('click', async () => {
 $('cForget').addEventListener('click', () => {
   lsSet('localStorage', K_KEY, null);
   lsSet('sessionStorage', K_KEY, null);
-  PIN.clear();
+  forgetPin();
   conn.key = '';
   $('cKey').value = '';
-  renderPinState();
-  $('cErr').textContent = 'この端末から ADMIN_KEY とパスワードを消しました';
-});
-$('cPinClear').addEventListener('click', () => {
-  PIN.clear();
-  renderPinState();
-  $('cErr').textContent = 'パスワードを解除しました（ADMIN_KEY の記憶は「この端末に記憶する」に従います）';
+  $('cErr').textContent = 'この端末から ADMIN_KEY と4桁を消しました';
 });
 $('openConn').addEventListener('click', async () => {
   if (!$('conn').hidden) { $('conn').hidden = true; return; }
   if (viewLocked) return; // 解錠待ちの間は開かない
-  if (!(await requirePin('接続設定を開く', true))) return;
+  /* Worker が4桁を求めているなら、接続設定を開く前にも確かめる */
+  if (pinEnabled && !(await requirePin('接続設定を開く', true))) return;
   showConn('');
 });
 $('reload').addEventListener('click', load);
@@ -1124,7 +1041,7 @@ window.addEventListener('resize', () => {
 });
 
 syncFilters();
-if (conn.url && conn.key) { if (PIN.isSet()) lockView(); else load(); } else showConn('');
+if (conn.url && conn.key) load(); else showConn(''); // Worker が4桁を求めれば load() が解錠パネルを出す
 </script>
 </body>
 </html>

@@ -122,8 +122,6 @@ textarea:focus,input[type=text]:focus,input[type=password]:focus{outline:none;ba
 /* 数字4桁のパスワード */
 input.pinin{font-size:26px;letter-spacing:.6em;text-align:center;padding-left:calc(14px + .6em);font-variant-numeric:tabular-nums}
 input.pinin:disabled{opacity:.5}
-.pinrow{display:flex;gap:11px}
-.pinrow input{flex:1;min-width:0}
 
 /* ===== badges ===== */
 .badge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:6px;padding:2px 7px;margin-right:6px;vertical-align:1px;letter-spacing:.02em}
@@ -477,17 +475,7 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
         <button id="setTest" class="btn ghost">接続テスト</button>
       </div>
       <div id="setTestOut" class="hint" style="margin-top:8px"></div>
-      <label class="flbl" for="pinNew">パスワード（数字4桁・任意）</label>
-      <p id="pinState" class="hint" style="margin:4px 0 0"></p>
-      <div class="pinrow">
-        <input type="password" id="pinNew" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="新しい4桁" aria-label="新しい4桁のパスワード">
-        <input type="password" id="pinNew2" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="もう一度" aria-label="確認のためもう一度">
-      </div>
-      <div class="btnrow" style="margin-top:10px">
-        <button id="pinSetBtn" class="btn ghost">設定する</button>
-        <button id="pinClearBtn" class="btn ghost" hidden>解除する</button>
-      </div>
-      <div id="pinOut" class="hint" style="margin-top:8px" aria-live="polite"></div>
+      <p class="hint" style="margin-top:12px">パスワード（数字4桁）は開発者が Worker で設定しています。設定されている場合、接続設定を開く・保存・接続テスト・全データの初期化に必要です（5回間違えると1時間ロック）。</p>
     </div>
   </div>
   <div class="card">
@@ -573,7 +561,7 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
 <div id="pinModal" class="modal" hidden>
   <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
     <h2 id="pinTitle" style="font-size:17px;margin:0 0 4px">パスワード</h2>
-    <p class="hint" style="margin:0">数字4桁のパスワードを入力してください。</p>
+    <p id="pinNote" class="hint" style="margin:0">開発者が設定した数字4桁のパスワードを入力してください。</p>
     <input type="password" id="pinIn" class="pinin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="数字4桁のパスワード">
     <div id="pinMsg" class="hint" style="min-height:1.7em;margin-top:8px" aria-live="polite"></div>
     <div class="btnrow" style="margin-top:8px">
@@ -2470,13 +2458,15 @@ $('sfxRange').addEventListener('input',function(){
   $('sfxVal').textContent=$('sfxRange').value+'%';
 });
 $('sfxRange').addEventListener('change',function(){save();beep('ok');track('setting','settings',S.settings.sfxVol,{key:'sfxVol'})});
-function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols();renderAnalytics();renderPin()}
-$('setSave').addEventListener('click',function(){
+function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols();renderAnalytics()}
+$('setSave').addEventListener('click',async function(){
+  if(!(await unlockForm()))return; // 入力した接続先でパスワードを確かめる（初回の設定も含む）
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
   save();toast('保存しました');
 });
 $('setTest').addEventListener('click',async function(){
+  if(!(await unlockForm()))return;
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
   save();
@@ -2487,8 +2477,9 @@ $('setTest').addEventListener('click',async function(){
   }catch(e){out.textContent='✗ '+e.message}
 });
 $('setReset').addEventListener('click',async function(){
-  /* パスワード設定中は初期化にも必要（初期化して接続設定を差し替える、という抜け道をふさぐ） */
-  if(!(await requirePin('全データの初期化')))return;
+  /* 初期化にもパスワードが必要（初期化して接続設定を差し替える、という抜け道をふさぐ） */
+  const _t=storedTarget();
+  if(_t&&!(await requirePin('全データの初期化',_t)))return;
   const yes=await confirmBox('全データ（カード・記録・設定）を削除します。元に戻せません。よろしいですか？');
   if(!yes)return;
   PIN.clear();
@@ -2522,90 +2513,121 @@ $('fbSend').addEventListener('click',async function(){
   }catch(e){$('fbOut').textContent='送信できません：'+e.message}
   finally{btn.disabled=false;btn.textContent='送信'}
 });
-/* ================= 接続設定のパスワード ================= */
+/* ================= 接続設定のパスワード =================
+   全員共通の数字4桁を開発者が Worker（SETTINGS_PIN）で決める。照合と失敗回数（5回で1時間ロック）は Worker 側。
+   4桁が要るのは、接続設定を開く・保存・接続テスト（初回の設定も含む）・全データの初期化。
+   Worker につながらない時（圏外・URLの誤り・合言葉の差し替え後）は、最後に照合できた4桁（PIN。端末内の予備）で確かめる。 */
 function pinClock(ts){const d=new Date(ts);return d.getHours()+':'+pad(d.getMinutes())}
 function pinLockedMsg(until){return PL.MAX_TRIES+'回間違えたため、'+pinClock(until)+' まで開けません'}
-/* パスワードが設定されていれば入力を求める。通れば true、やめたら false。未設定なら即 true */
-function requirePin(title){
-  if(!PIN.isSet())return Promise.resolve(true);
+/* 保存済みの接続先 / 入力欄の接続先 */
+function storedTarget(){const b=workerBase();return b?{base:b,key:S.settings.appKey||''}:null}
+function formTarget(){
+  let u=$('setUrl').value.trim();
+  if(!u)return null;
+  if(!/^https?:\/\//.test(u))u='https://'+u;
+  return {base:u.replace(/\/+$/,''),key:$('setKey').value.trim()};
+}
+/* Worker に照合してもらう。つながらない・合言葉が違う時は {fail:true} */
+async function pinAsk(t,pin){
+  try{
+    const headers={'Content-Type':'application/json'};
+    if(t.key)headers['x-app-key']=t.key;
+    const res=await fetch(t.base+'/pin',{method:'POST',headers:headers,body:JSON.stringify({pin:pin,uid:AN.uid})});
+    const d=await res.json().catch(function(){return null});
+    if(!res.ok||!d||d.error)return {fail:true,status:res.status,message:(d&&d.error&&(d.error.message||d.error))||('HTTP '+res.status)};
+    return d;
+  }catch(e){return {fail:true,status:0,message:'Workerに接続できません'}}
+}
+/* t の Worker がパスワードを有効にしていれば入力を求める。通れば true、やめたら false。
+   strict=true（保存・接続テスト）は Worker で確かめられない限り通さない。
+   strict=false（開く・初期化）は、つながらなければ端末内の予備で確かめ、予備も無ければ通す
+   （前回確かめた時点でパスワード無しだった端末。圏外でも設定を直せるように） */
+async function requirePin(title,t,strict){
+  const probe=await pinAsk(t,''); // 空の問い合わせは回数に数えられない
+  if(!probe.fail&&probe.enabled===false){PIN.clear();return true}
+  let mode;
+  if(!probe.fail)mode='server';
+  else if(strict){toast(probe.status===401?'合言葉が一致しません':probe.message);return false}
+  else if(PIN.isSet())mode='local';
+  else return true;
+  return pinDialog(title,mode,t,probe);
+}
+function pinDialog(title,mode,t,probe){
   return new Promise(function(resolve){
     const m=$('pinModal'),inp=$('pinIn'),msg=$('pinMsg'),ok=$('pinOk'),cancel=$('pinCancel');
     $('pinTitle').textContent=title;
+    $('pinNote').textContent=mode==='local'
+      ?'Workerにつながらないため、この端末に残っている前回のパスワードで確かめます。'
+      :'開発者が設定した数字4桁のパスワードを入力してください。';
     inp.value='';msg.textContent='';
     let relockT=null;
-    function sync(){
-      const st=PIN.status();
-      inp.disabled=st.locked;ok.disabled=st.locked;
+    /* ロック中は入力を止め、明けたら自動で戻す（開いたまま待っていても入力できるように） */
+    function show(r){
       clearTimeout(relockT);
-      if(st.locked){
-        inp.value='';
-        msg.textContent=pinLockedMsg(st.until);
-        /* 開いたまま待っていても、ロックが明けたら入力できるようにする */
-        relockT=setTimeout(function(){msg.textContent='';sync();if(!inp.disabled)inp.focus()},st.until-Date.now()+500);
+      const locked=!!(r&&r.locked);
+      inp.disabled=locked;ok.disabled=locked;
+      if(locked){
+        inp.value='';msg.textContent=pinLockedMsg(r.until);
+        relockT=setTimeout(function(){msg.textContent='';show(null);inp.focus()},r.until-Date.now()+500);
       }
     }
     function done(v){clearTimeout(relockT);m.hidden=true;ok.onclick=null;cancel.onclick=null;inp.onkeydown=null;resolve(v)}
-    sync();
+    show(mode==='server'?probe:PIN.status());
     m.hidden=false;
     if(!inp.disabled)setTimeout(function(){inp.focus()},60);
     ok.onclick=async function(){
       if(ok.disabled)return;
+      const v=inp.value.trim();
+      if(!PL.valid(v)){msg.textContent='数字4桁で入力してください';inp.value='';return}
       ok.disabled=true;
-      const r=await PIN.verify(inp.value.trim());
-      if(r.ok){done(true);return}
+      let r;
+      if(mode==='server'){
+        r=await pinAsk(t,v);
+        if(r.fail){msg.textContent=r.message;ok.disabled=false;return}
+        if(r.ok){await PIN.set(v);done(true);return} // 次につながらない時の予備として端末に残す（salted hash）
+      }else{
+        r=await PIN.verify(v);
+        if(r.ok){done(true);return}
+      }
       inp.value='';
-      if(r.invalid)msg.textContent='数字4桁で入力してください';
-      else if(r.locked)msg.textContent=pinLockedMsg(r.until);
-      else msg.textContent='パスワードが違います（あと'+r.remaining+'回）';
-      sync();
+      msg.textContent=r.locked?pinLockedMsg(r.until):'パスワードが違います（あと'+r.remaining+'回）';
+      ok.disabled=false;
+      show(r);
       if(!inp.disabled)inp.focus();
     };
     cancel.onclick=function(){done(false)};
     inp.onkeydown=function(e){if(e.key==='Enter')ok.onclick()};
   });
 }
-/* 接続設定を開く経路はここだけ（パスワードを通す） */
+/* 接続設定を開く経路はここだけ。保存済みの接続先があれば、その Worker でパスワードを確かめる
+   （新しい端末は守るものが無いので開ける。保存の時に4桁が要る） */
+let connUnlocked='';
 async function openConn(){
-  if(!(await requirePin('接続設定を開く')))return false;
+  const t=storedTarget();
+  if(t&&!(await requirePin('接続設定を開く',t)))return false;
+  connUnlocked=t?t.base+'|'+t.key:'';
   $('connBox').hidden=false;
   $('connToggle').textContent='接続設定を閉じる';
-  renderPin();
   return true;
 }
 function closeConn(){
+  connUnlocked='';
   $('connBox').hidden=true;
   $('connToggle').textContent='接続設定を開く';
-  $('pinOut').textContent='';
+}
+/* 保存・接続テストは、入力した接続先でパスワードを確かめる（初回の設定も含む）。同じ接続先で解錠済みなら聞き直さない */
+async function unlockForm(){
+  const t=formTarget();
+  if(!t){toast('Worker URL を入力してください');return null}
+  if(connUnlocked===t.base+'|'+t.key)return t;
+  if(!(await requirePin('接続設定の保存',t,true)))return null;
+  connUnlocked=t.base+'|'+t.key;
+  return t;
 }
 $('connToggle').addEventListener('click',function(){if($('connBox').hidden)openConn();else closeConn()});
 /* アプリが背面に回ったら閉じる＝次に開く時はまたパスワード */
 function lockConnOnHide(){if(document.hidden)closeConn()}
 document.addEventListener('visibilitychange',lockConnOnHide);
-function renderPin(){
-  const set=PIN.isSet();
-  $('pinState').textContent=set
-    ?'設定済み。接続設定を開く時と、全データの初期化に必要です（'+PL.MAX_TRIES+'回間違えると1時間ロック）。忘れたら1時間待つか、Safariのサイトデータを消す（学習データも消えます）しかありません。'
-    :'未設定。設定すると、接続設定を開く時と全データの初期化に数字4桁が必要になります（'+PL.MAX_TRIES+'回間違えると1時間ロック）。';
-  $('pinSetBtn').textContent=set?'変更する':'設定する';
-  $('pinClearBtn').hidden=!set;
-}
-$('pinSetBtn').addEventListener('click',async function(){
-  const a=$('pinNew').value.trim(),b=$('pinNew2').value.trim();
-  if(!PL.valid(a)){$('pinOut').textContent='数字4桁で入力してください';return}
-  if(a!==b){$('pinOut').textContent='2回とも同じ4桁を入力してください';return}
-  const was=PIN.isSet();
-  await PIN.set(a);
-  $('pinNew').value='';$('pinNew2').value='';
-  renderPin();
-  $('pinOut').textContent=was?'変更しました':'設定しました。次からは接続設定を開く時に必要です';
-  track('setting','settings',null,{key:'pin',on:true});
-});
-$('pinClearBtn').addEventListener('click',function(){
-  PIN.clear();
-  renderPin();
-  $('pinOut').textContent='解除しました';
-  track('setting','settings',null,{key:'pin',on:false});
-});
 $('cmdToggle').addEventListener('click',function(){
   const b=$('cmdBox');b.hidden=!b.hidden;
   $('cmdToggle').textContent=b.hidden?'コマンド説明を見る':'閉じる';
@@ -2634,7 +2656,7 @@ $('obDone').addEventListener('click',function(){
   showNoticeIfNeeded();
   if(!S.settings.workerUrl){
     switchTab('tab-set');
-    if(!PIN.isSet())openConn(); // パスワード設定中は自動では開かない
+    openConn(); // 保存済みの接続先が無いので、パスワード無しで開く（保存時に4桁が要る）
     toast('まず接続設定を行ってください');
   }
 });
@@ -2672,7 +2694,7 @@ if(!S.settings.onboarded){
   showNoticeIfNeeded();
   if(!S.settings.workerUrl){
     switchTab('tab-set');
-    if(!PIN.isSet())openConn(); // パスワード設定中は自動では開かない
+    openConn(); // 保存済みの接続先が無いので、パスワード無しで開く（保存時に4桁が要る）
     toast('まず設定でWorker URLを入力してください');
   }
 }
