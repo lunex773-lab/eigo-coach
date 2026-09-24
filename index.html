@@ -113,12 +113,17 @@ main{max-width:640px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top))
 .btnrow .btn{flex:1}
 
 /* ===== inputs ===== */
-textarea,input[type=text]{
+textarea,input[type=text],input[type=password]{
   width:100%;padding:12px 14px;border:.5px solid transparent;border-radius:var(--rb);
   font-size:16px;background:var(--fill);font-family:inherit;margin-top:8px;color:var(--ink);
   transition:box-shadow .2s var(--e),background .2s;
 }
-textarea:focus,input[type=text]:focus{outline:none;background:var(--card);box-shadow:0 0 0 4px rgba(0,113,227,.16),inset 0 0 0 1px var(--blue)}
+textarea:focus,input[type=text]:focus,input[type=password]:focus{outline:none;background:var(--card);box-shadow:0 0 0 4px rgba(0,113,227,.16),inset 0 0 0 1px var(--blue)}
+/* 数字4桁のパスワード */
+input.pinin{font-size:26px;letter-spacing:.6em;text-align:center;padding-left:calc(14px + .6em);font-variant-numeric:tabular-nums}
+input.pinin:disabled{opacity:.5}
+.pinrow{display:flex;gap:11px}
+.pinrow input{flex:1;min-width:0}
 
 /* ===== badges ===== */
 .badge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;border-radius:6px;padding:2px 7px;margin-right:6px;vertical-align:1px;letter-spacing:.02em}
@@ -472,6 +477,17 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
         <button id="setTest" class="btn ghost">接続テスト</button>
       </div>
       <div id="setTestOut" class="hint" style="margin-top:8px"></div>
+      <label class="flbl" for="pinNew">パスワード（数字4桁・任意）</label>
+      <p id="pinState" class="hint" style="margin:4px 0 0"></p>
+      <div class="pinrow">
+        <input type="password" id="pinNew" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="新しい4桁" aria-label="新しい4桁のパスワード">
+        <input type="password" id="pinNew2" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" placeholder="もう一度" aria-label="確認のためもう一度">
+      </div>
+      <div class="btnrow" style="margin-top:10px">
+        <button id="pinSetBtn" class="btn ghost">設定する</button>
+        <button id="pinClearBtn" class="btn ghost" hidden>解除する</button>
+      </div>
+      <div id="pinOut" class="hint" style="margin-top:8px" aria-live="polite"></div>
     </div>
   </div>
   <div class="card">
@@ -551,6 +567,18 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
     <div class="btnrow" style="margin-top:12px">
       <button id="noticeNo" class="btn ghost">送らずに使う</button>
       <button id="noticeOk" class="btn">OK</button>
+    </div>
+  </div>
+</div>
+<div id="pinModal" class="modal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <h2 id="pinTitle" style="font-size:17px;margin:0 0 4px">パスワード</h2>
+    <p class="hint" style="margin:0">数字4桁のパスワードを入力してください。</p>
+    <input type="password" id="pinIn" class="pinin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="数字4桁のパスワード">
+    <div id="pinMsg" class="hint" style="min-height:1.7em;margin-top:8px" aria-live="polite"></div>
+    <div class="btnrow" style="margin-top:8px">
+      <button id="pinCancel" class="btn ghost">やめる</button>
+      <button id="pinOk" class="btn">開く</button>
     </div>
   </div>
 </div>
@@ -939,6 +967,86 @@ var EA = (function () {
   return { create: create, makeDwell: makeDwell, UID_KEY: UID_KEY, Q_KEY: Q_KEY };
 })();
 /* === eigo-analytics:end === */
+/* === pin-lock:start === */
+/* 接続設定を守る数字4桁のパスワード。5回間違えると1時間ロック。
+   アプリ（index.html）と管理画面（admin.html）に同一内容で置く（test/pin-lock.test.js が一致を検査）。
+   DOM に触れない。平文は保存せず、digest(salt + ':' + pin) だけを保存する。
+   守れるのは「端末を触った他人」から。端末内の保存領域を直接読める人・時計を進める人は防げない。 */
+var PL = (function () {
+  'use strict';
+  var MAX_TRIES = 5;
+  var LOCK_MS = 3600000;
+
+  function valid(pin) { return /^\d{4}$/.test(String(pin)); }
+
+  function create(o) {
+    function load() {
+      try {
+        var v = JSON.parse(o.storage.getItem(o.key) || 'null');
+        return v && typeof v.hash === 'string' && typeof v.salt === 'string' ? v : null;
+      } catch (e) { return null; }
+    }
+    function save(v) {
+      try { if (v) o.storage.setItem(o.key, JSON.stringify(v)); else o.storage.removeItem(o.key); } catch (e) {}
+    }
+    function status() {
+      var v = load();
+      if (!v) return { set: false, locked: false, until: 0, remaining: MAX_TRIES };
+      var locked = (v.until || 0) > o.now();
+      var fails = locked ? MAX_TRIES : (v.until ? 0 : (v.fails || 0)); // 期限切れのロックは回数ごと解ける
+      return { set: true, locked: locked, until: locked ? v.until : 0, remaining: MAX_TRIES - fails };
+    }
+    function set(pin) {
+      if (!valid(pin)) return Promise.reject(new Error('数字4桁で入力してください'));
+      var salt = '';
+      for (var i = 0; i < 16; i++) salt += Math.floor(o.rand() * 16).toString(16);
+      return o.digest(salt + ':' + pin).then(function (hash) {
+        save({ v: 1, salt: salt, hash: hash, fails: 0, until: 0 });
+      });
+    }
+    function clear() { save(null); }
+    function verify(pin) {
+      var v = load();
+      if (!v) return Promise.resolve({ ok: true, locked: false, until: 0, remaining: MAX_TRIES });
+      var now = o.now();
+      if (v.until && v.until > now) return Promise.resolve({ ok: false, locked: true, until: v.until, remaining: 0 });
+      if (v.until) { v.until = 0; v.fails = 0; } // ロックが明けたらまた5回試せる
+      /* 4桁の数字でない入力は打ち間違いとみなし、回数に数えない */
+      if (!valid(pin)) return Promise.resolve({ ok: false, locked: false, until: 0, remaining: MAX_TRIES - (v.fails || 0), invalid: true });
+      return o.digest(v.salt + ':' + pin).then(function (hash) {
+        if (hash === v.hash) {
+          v.fails = 0; v.until = 0; save(v);
+          return { ok: true, locked: false, until: 0, remaining: MAX_TRIES };
+        }
+        v.fails = (v.fails || 0) + 1;
+        if (v.fails >= MAX_TRIES) {
+          v.fails = 0; v.until = now + LOCK_MS; save(v);
+          return { ok: false, locked: true, until: v.until, remaining: 0 };
+        }
+        save(v);
+        return { ok: false, locked: false, until: 0, remaining: MAX_TRIES - v.fails };
+      });
+    }
+    return { isSet: function () { return !!load(); }, status: status, set: set, clear: clear, verify: verify };
+  }
+
+  /* SHA-256（16進）。crypto.subtle が使えない環境（http の非 localhost 等）では簡易ハッシュで代用する */
+  function sha256(s) {
+    try {
+      if (typeof crypto !== 'undefined' && crypto.subtle && typeof TextEncoder !== 'undefined') {
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (b) {
+          return Array.prototype.map.call(new Uint8Array(b), function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
+        });
+      }
+    } catch (e) {}
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return Promise.resolve('fnv' + h.toString(16));
+  }
+
+  return { create: create, sha256: sha256, valid: valid, MAX_TRIES: MAX_TRIES, LOCK_MS: LOCK_MS };
+})();
+/* === pin-lock:end === */
 const LS='eigo-coach:v1';
 const INTERVALS=EC.INTERVALS; // ライトナー箱→次回まで日数
 const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算。v1.1 以降は Worker が返す cost_usd を積算し、これは旧Worker・旧データの換算にだけ使う
@@ -1026,6 +1134,8 @@ const AN=EA.create({
 });
 /* 記録の失敗でアプリを止めない */
 function track(kind,feature,n,d){try{AN.track(kind,feature,n,d)}catch(e){}}
+/* 接続設定のパスワード（数字4桁・任意）。S とは別キーなのでバックアップには入らない */
+const PIN=PL.create({storage:localStorage,key:'eigo-coach:pin',now:Date.now,digest:PL.sha256,rand:rnd});
 /* 画面＝機能ごとの滞在時間（dwell）と、前面で使っていた時間（fg）。操作の間が2分を超えた分は数えない */
 let curTab='tab-ask',testMode='reading';
 function screenFeature(){return curTab==='tab-ask'?'ask':curTab==='tab-test'?testMode:curTab==='tab-rec'?'records':'settings'}
@@ -2265,7 +2375,10 @@ $('tagAssignDone').addEventListener('click',function(){assignTag=null;renderRec(
 
 /* バックアップ */
 $('expBtn').addEventListener('click',async function(){
-  const data=JSON.stringify({app:'eigo-coach',v:1,exportedAt:new Date().toISOString(),data:S});
+  /* 合言葉は書き出さない（バックアップを見れば合言葉が分かる、という抜け道をふさぐ） */
+  const _exp=JSON.parse(JSON.stringify(S));
+  delete _exp.settings.appKey;
+  const data=JSON.stringify({app:'eigo-coach',v:1,exportedAt:new Date().toISOString(),data:_exp});
   $('ioWrap').hidden=false;$('impApply').hidden=true;$('ioArea').value=data;
   track('backup','records',null,{op:'export',items:S.items.length});
   try{
@@ -2288,7 +2401,12 @@ $('impApply').addEventListener('click',async function(){
   const yes=await confirmBox('現在のデータを消して、貼り付けた内容で復元します。よろしいですか？');
   if(!yes)return;
   const _old=(S.busDeleted||[]).slice();
+  /* 接続設定は、今の端末にあればそれを守る（細工したバックアップで接続先を書き換えられないように。
+     パスワードを設定中なら空でも守る）。何も無い新しい端末でだけ、旧バックアップの接続設定を使う */
+  const _conn={workerUrl:S.settings.workerUrl,appKey:S.settings.appKey};
+  const _keepConn=!!(_conn.workerUrl||_conn.appKey||PIN.isSet());
   S=migrate(Object.assign(fresh(),obj.data));
+  if(_keepConn){S.settings.workerUrl=_conn.workerUrl;S.settings.appKey=_conn.appKey}
   /* バックアップに busDeleted が無くても、復元前のトゥームストーンは失わない。
      さもないと次回起動時にバスから削除済みカードが再流入する（setReset と同じ理由・同じやり方） */
   S.busDeleted=_old.concat(S.busDeleted||[]).filter(function(k,i,a){return k&&a.indexOf(k)===i;});
@@ -2352,7 +2470,7 @@ $('sfxRange').addEventListener('input',function(){
   $('sfxVal').textContent=$('sfxRange').value+'%';
 });
 $('sfxRange').addEventListener('change',function(){save();beep('ok');track('setting','settings',S.settings.sfxVol,{key:'sfxVol'})});
-function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols();renderAnalytics()}
+function loadSettings(){$('setUrl').value=S.settings.workerUrl||'';$('setKey').value=S.settings.appKey||'';renderPrefs();renderVols();renderAnalytics();renderPin()}
 $('setSave').addEventListener('click',function(){
   S.settings.workerUrl=$('setUrl').value.trim();
   S.settings.appKey=$('setKey').value.trim();
@@ -2369,8 +2487,11 @@ $('setTest').addEventListener('click',async function(){
   }catch(e){out.textContent='✗ '+e.message}
 });
 $('setReset').addEventListener('click',async function(){
+  /* パスワード設定中は初期化にも必要（初期化して接続設定を差し替える、という抜け道をふさぐ） */
+  if(!(await requirePin('全データの初期化')))return;
   const yes=await confirmBox('全データ（カード・記録・設定）を削除します。元に戻せません。よろしいですか？');
   if(!yes)return;
+  PIN.clear();
   track('reset','settings',null,{items:S.items.length});
   AN.flushBeacon();
   const _old=(S.busDeleted||[]).slice();
@@ -2401,9 +2522,89 @@ $('fbSend').addEventListener('click',async function(){
   }catch(e){$('fbOut').textContent='送信できません：'+e.message}
   finally{btn.disabled=false;btn.textContent='送信'}
 });
-$('connToggle').addEventListener('click',function(){
-  const b=$('connBox');b.hidden=!b.hidden;
-  $('connToggle').textContent=b.hidden?'接続設定を開く':'接続設定を閉じる';
+/* ================= 接続設定のパスワード ================= */
+function pinClock(ts){const d=new Date(ts);return d.getHours()+':'+pad(d.getMinutes())}
+function pinLockedMsg(until){return PL.MAX_TRIES+'回間違えたため、'+pinClock(until)+' まで開けません'}
+/* パスワードが設定されていれば入力を求める。通れば true、やめたら false。未設定なら即 true */
+function requirePin(title){
+  if(!PIN.isSet())return Promise.resolve(true);
+  return new Promise(function(resolve){
+    const m=$('pinModal'),inp=$('pinIn'),msg=$('pinMsg'),ok=$('pinOk'),cancel=$('pinCancel');
+    $('pinTitle').textContent=title;
+    inp.value='';msg.textContent='';
+    let relockT=null;
+    function sync(){
+      const st=PIN.status();
+      inp.disabled=st.locked;ok.disabled=st.locked;
+      clearTimeout(relockT);
+      if(st.locked){
+        inp.value='';
+        msg.textContent=pinLockedMsg(st.until);
+        /* 開いたまま待っていても、ロックが明けたら入力できるようにする */
+        relockT=setTimeout(function(){msg.textContent='';sync();if(!inp.disabled)inp.focus()},st.until-Date.now()+500);
+      }
+    }
+    function done(v){clearTimeout(relockT);m.hidden=true;ok.onclick=null;cancel.onclick=null;inp.onkeydown=null;resolve(v)}
+    sync();
+    m.hidden=false;
+    if(!inp.disabled)setTimeout(function(){inp.focus()},60);
+    ok.onclick=async function(){
+      if(ok.disabled)return;
+      ok.disabled=true;
+      const r=await PIN.verify(inp.value.trim());
+      if(r.ok){done(true);return}
+      inp.value='';
+      if(r.invalid)msg.textContent='数字4桁で入力してください';
+      else if(r.locked)msg.textContent=pinLockedMsg(r.until);
+      else msg.textContent='パスワードが違います（あと'+r.remaining+'回）';
+      sync();
+      if(!inp.disabled)inp.focus();
+    };
+    cancel.onclick=function(){done(false)};
+    inp.onkeydown=function(e){if(e.key==='Enter')ok.onclick()};
+  });
+}
+/* 接続設定を開く経路はここだけ（パスワードを通す） */
+async function openConn(){
+  if(!(await requirePin('接続設定を開く')))return false;
+  $('connBox').hidden=false;
+  $('connToggle').textContent='接続設定を閉じる';
+  renderPin();
+  return true;
+}
+function closeConn(){
+  $('connBox').hidden=true;
+  $('connToggle').textContent='接続設定を開く';
+  $('pinOut').textContent='';
+}
+$('connToggle').addEventListener('click',function(){if($('connBox').hidden)openConn();else closeConn()});
+/* アプリが背面に回ったら閉じる＝次に開く時はまたパスワード */
+function lockConnOnHide(){if(document.hidden)closeConn()}
+document.addEventListener('visibilitychange',lockConnOnHide);
+function renderPin(){
+  const set=PIN.isSet();
+  $('pinState').textContent=set
+    ?'設定済み。接続設定を開く時と、全データの初期化に必要です（'+PL.MAX_TRIES+'回間違えると1時間ロック）。忘れたら1時間待つか、Safariのサイトデータを消す（学習データも消えます）しかありません。'
+    :'未設定。設定すると、接続設定を開く時と全データの初期化に数字4桁が必要になります（'+PL.MAX_TRIES+'回間違えると1時間ロック）。';
+  $('pinSetBtn').textContent=set?'変更する':'設定する';
+  $('pinClearBtn').hidden=!set;
+}
+$('pinSetBtn').addEventListener('click',async function(){
+  const a=$('pinNew').value.trim(),b=$('pinNew2').value.trim();
+  if(!PL.valid(a)){$('pinOut').textContent='数字4桁で入力してください';return}
+  if(a!==b){$('pinOut').textContent='2回とも同じ4桁を入力してください';return}
+  const was=PIN.isSet();
+  await PIN.set(a);
+  $('pinNew').value='';$('pinNew2').value='';
+  renderPin();
+  $('pinOut').textContent=was?'変更しました':'設定しました。次からは接続設定を開く時に必要です';
+  track('setting','settings',null,{key:'pin',on:true});
+});
+$('pinClearBtn').addEventListener('click',function(){
+  PIN.clear();
+  renderPin();
+  $('pinOut').textContent='解除しました';
+  track('setting','settings',null,{key:'pin',on:false});
 });
 $('cmdToggle').addEventListener('click',function(){
   const b=$('cmdBox');b.hidden=!b.hidden;
@@ -2433,8 +2634,7 @@ $('obDone').addEventListener('click',function(){
   showNoticeIfNeeded();
   if(!S.settings.workerUrl){
     switchTab('tab-set');
-    $('connBox').hidden=false;
-    $('connToggle').textContent='接続設定を閉じる';
+    if(!PIN.isSet())openConn(); // パスワード設定中は自動では開かない
     toast('まず接続設定を行ってください');
   }
 });
@@ -2472,8 +2672,7 @@ if(!S.settings.onboarded){
   showNoticeIfNeeded();
   if(!S.settings.workerUrl){
     switchTab('tab-set');
-    $('connBox').hidden=false;
-    $('connToggle').textContent='接続設定を閉じる';
+    if(!PIN.isSet())openConn(); // パスワード設定中は自動では開かない
     toast('まず設定でWorker URLを入力してください');
   }
 }
