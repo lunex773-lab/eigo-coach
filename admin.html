@@ -186,6 +186,17 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 .tl .d{color:var(--ink2);word-break:break-word}
 .tl .q{color:var(--muted);font-size:12px;word-break:break-word}
 
+/* フィードバック（本文が主役。日時・版・端末番号は1行の控えめなメタ情報に） */
+.fbl{display:flex;flex-direction:column}
+.fbi{padding:14px 0;border-bottom:1px solid var(--line)}
+.fbi:first-child{padding-top:0}
+.fbi:last-child{border-bottom:0;padding-bottom:0}
+.fbi .m{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12px;color:var(--muted)}
+.fbi .m b{color:var(--ink2);font-weight:700}
+.fbi .t{margin-top:6px;font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.tag.new{background:var(--ink);color:var(--page);margin-left:0}
+.uidbtn{border:0;background:none;padding:4px 0;font-size:12px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+
 /* 質問と回答 */
 .qa{display:flex;flex-direction:column}
 .qi{padding:12px 0;border-bottom:1px solid var(--line)}
@@ -268,6 +279,15 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 
   <main id="main" hidden>
     <section class="kpis" id="kpis" aria-label="主な数字"></section>
+
+    <section class="block" aria-labelledby="fbTitle">
+      <div class="bh">
+        <h2 id="fbTitle">フィードバック</h2>
+        <span class="note" id="fbNote"></span>
+      </div>
+      <div id="fb" class="fbl"></div>
+      <div class="row" style="justify-content:center;margin-top:12px"><button id="fbMore" class="btn" hidden>すべて表示</button></div>
+    </section>
 
     <section class="block">
       <div class="bh">
@@ -784,6 +804,44 @@ function answerText(r) {
   }
   return r.a || '';
 }
+/* フィードバック。並びと「新着」の判定は Worker が受け取った時刻（キー fb:<ミリ秒>）で行う。
+   前回この画面で見た最新の時刻を端末に覚えておき、それより後に届いたものに「新着」を付ける */
+const K_FBSEEN = 'eigo-admin:fbSeen';
+const FB_FIRST = 10;
+let fbRows = [], fbAll = false, fbSeenAtLoad = 0;
+const fbTime = (x) => Number(String(x.id || '').slice(3)) || Date.parse(x.at) || 0;
+async function loadFeedback() {
+  try {
+    const r = await api({ view: 'feedback' });
+    fbRows = r.rows || [];
+    fbSeenAtLoad = Number(lsGet('localStorage', K_FBSEEN)) || 0;
+    renderFeedback();
+    const newest = fbRows.reduce((m, x) => Math.max(m, fbTime(x)), 0);
+    if (newest > fbSeenAtLoad) lsSet('localStorage', K_FBSEEN, String(newest)); // 次に開いた時は、これより後だけが新着
+  } catch (e) {
+    $('fb').replaceChildren(h('div', { class: 'muted small' }, '読み込めませんでした：' + e.message));
+    $('fbNote').textContent = '';
+    $('fbMore').hidden = true;
+  }
+}
+function renderFeedback() {
+  const fresh = fbRows.filter((x) => fbTime(x) > fbSeenAtLoad).length;
+  $('fbNote').textContent = fbRows.length ? fbRows.length + '件' + (fresh ? '・新着 ' + fresh + '件' : '') : '';
+  const list = fbAll ? fbRows : fbRows.slice(0, FB_FIRST);
+  $('fb').replaceChildren(...(list.length ? list.map((x) => h('div', { class: 'fbi' },
+    h('div', { class: 'm' },
+      h('b', { class: 'num' }, x.at ? fmtTs(Date.parse(x.at) || fbTime(x)) : fmtTs(fbTime(x))),
+      fbTime(x) > fbSeenAtLoad ? h('span', { class: 'tag new' }, '新着') : null,
+      x.app ? h('span', null, x.app) : null,
+      x.uid
+        ? h('button', { class: 'uidbtn num', title: 'この人の行動を時系列で見る', onclick: () => openTimeline(x.uid) }, x.uid)
+        : h('span', null, '端末番号なし')),
+    h('div', { class: 't' }, x.text))) : [h('div', { class: 'empty' }, 'まだフィードバックはありません')]));
+  $('fbMore').hidden = fbRows.length <= FB_FIRST;
+  $('fbMore').textContent = fbAll ? '新しい' + FB_FIRST + '件だけ表示' : 'すべて表示（' + fbRows.length + '件）';
+}
+$('fbMore').addEventListener('click', () => { fbAll = !fbAll; renderFeedback(); });
+
 async function loadQa(reset) {
   if (reset) { state.qa.next = null; $('qa').replaceChildren(); }
   const offset = reset ? 0 : state.qa.next || 0;
@@ -831,6 +889,7 @@ async function load() {
       new Date().toLocaleTimeString('ja-JP', Object.assign({ hour: '2-digit', minute: '2-digit' }, TZ)) + ' 更新';
     renderAll();
     loadQa(true);
+    loadFeedback();
     if (state.selUid) openTimeline(state.selUid);
   } catch (e) {
     if (e instanceof PinError) {
