@@ -366,7 +366,7 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 const YEN = 155;
 const FEATURES = [['ask', '質問'], ['reading', '読解'], ['listen', 'リスニング'], ['cards', '単語'], ['records', '記録'], ['settings', '設定']];
 const FEATURE_LABEL = Object.fromEntries(FEATURES.concat([['other', 'その他']]));
-const AI_FEATURE = { ask_vocab: '単語の質問', ask_deep: '英文解説', extract: 'カード抽出', reading: '読解の作成', reading_hard: '難問の作成', listen: 'リスニングの作成', conn_test: '接続テスト', other: 'その他' };
+const AI_FEATURE = { ask_vocab: '単語の質問', ask_deep: '英文解説', extract: 'カード抽出', reading: '読解の作成', reading_hard: '難問の作成', listen: 'リスニングの作成', lookup: '読解で調べた語', conn_test: '接続テスト', other: 'その他' };
 const KIND = { open: '起動', fg: '前面で使用', dwell: '画面に滞在', tab: '画面を切替', ask: '質問', ask_err: '質問のエラー', gen: '問題を作成', gen_err: '作成のエラー',
   test: '採点', play: '音声を再生', card: 'カードに回答', card_set: 'カード1セット終了', card_edit: 'カードを編集', card_del: 'カードを削除', setting: '設定を変更',
   backup: 'バックアップ', share: 'シェア', feedback: 'フィードバック送信', reset: '全データを削除', onboard: '初回案内を完了', notice: '記録の告知を確認', js_err: 'アプリのエラー' };
@@ -795,15 +795,25 @@ function renderErrors(d) {
   $('errors').replaceChildren(ai, app);
 }
 
-/* 質問と回答。単語モードの回答は JSON なので解説部分を取り出して表示する */
+/* === admin-answer:start === */
+/* 質問と回答。単語の質問・読解で調べた語の回答は JSON なので、読める文章に直して表示する */
+const JSON_ANSWER = ['ask_vocab', 'lookup'];
 function answerText(r) {
-  const j = r.feature === 'ask_vocab' ? parseJSON(r.a) : null;
+  let j = null;
+  if (JSON_ANSWER.indexOf(r.feature) >= 0) { try { j = r.a ? JSON.parse(r.a) : null; } catch (e) { j = null; } }
   if (j && typeof j === 'object') {
+    const ents = Array.isArray(j.entries) ? j.entries.filter((e) => e && e.front).map(entryLine) : [];
     const items = Array.isArray(j.items) ? j.items.map((x) => x && x.front).filter(Boolean) : [];
-    return String(j.explanation || '') + (items.length ? '\n［カード］' + items.join('、') : '');
+    return ents.concat(j.explanation ? [String(j.explanation)] : []).join('\n') + (items.length ? '\n［カード］' + items.join('、') : '');
   }
   return r.a || '';
 }
+function entryLine(e) {
+  const pos = Array.isArray(e.pos) ? e.pos.join('・') : String(e.pos || '');
+  const senses = Array.isArray(e.senses) ? e.senses.map((x) => x && x.mean).filter(Boolean) : [];
+  return String(e.front) + (pos ? '（' + pos + '）' : '') + (e.ctx ? '［文中］' + e.ctx : '') + (senses.length ? '：' + senses.join('／') : '');
+}
+/* === admin-answer:end === */
 /* フィードバック。並びと「新着」の判定は Worker が受け取った時刻（キー fb:<ミリ秒>）で行う。
    前回この画面で見た最新の時刻を端末に覚えておき、それより後に届いたものに「新着」を付ける */
 const K_FBSEEN = 'eigo-admin:fbSeen';

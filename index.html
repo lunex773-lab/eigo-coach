@@ -149,6 +149,83 @@ input.pinin:disabled{opacity:.5}
 /* ===== explanation ===== */
 .exp{font-size:14.5px;line-height:1.85;margin-top:6px}
 .exp b{color:var(--blue);font-weight:600}
+/* ===== 単語解説（区分つき・案1b） ===== */
+.vent+.vent{border-top:.5px solid var(--line);margin-top:16px;padding-top:16px}
+.vhead{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px}
+.vhead .badge{margin-right:0}
+.vword{font-family:'New York','Times New Roman',Georgia,serif;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-right:2px;word-break:break-word}
+.vpos{display:inline-flex;font-size:11px;font-weight:700;color:var(--blue);background:rgba(0,113,227,.09);border-radius:6px;padding:2px 7px}
+.vcore{margin-top:12px;background:var(--fill);border-radius:14px;padding:11px 14px}
+.vcore .k,.vctx .k{font-size:11px;font-weight:700;color:#6e6e73;letter-spacing:.04em}
+.vcore .v{font-size:16px;font-weight:700;line-height:1.55;margin-top:1px}
+.vcore b{color:var(--blue)}
+.vsenses{margin-top:6px}
+.vsense{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:.5px solid var(--line)}
+.vsense:last-child{border-bottom:0}
+.vsp{font-size:12.5px;font-weight:700;line-height:1.4}
+.vsp small{display:block;font-size:11px;color:#6e6e73;font-weight:600;margin-top:1px}
+.vsm{font-size:15px;font-weight:600;line-height:1.5}
+.vsu{font-size:13px;color:#6e6e73;margin-top:2px;line-height:1.55}
+.vtips{font-size:12.5px;color:#6e6e73;margin-top:6px}
+.vrow{display:flex;align-items:center;gap:10px;width:100%;min-height:50px;padding:0;border:0;border-top:.5px solid var(--line2);background:none;color:var(--ink);text-align:left;font-size:14.5px}
+.vrow .n{font-weight:700;flex:none}
+.vrow .p{flex:1;min-width:0;font-size:13px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.vrow .chev{color:var(--sub);flex:none;width:14px;text-align:center;transition:transform .2s var(--e)}
+.vrow[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.vbody{padding:0 0 8px;animation:fadeUp .3s var(--eo)}
+.vparts{display:flex;align-items:stretch;gap:6px}
+.vpart{flex:1;min-width:0;background:var(--fill);border-radius:12px;padding:8px 11px}
+.vpart .m{font-size:17px;font-weight:700;line-height:1.3}
+.vpart .j{font-size:12.5px;color:var(--ink2)}
+.vplus{align-self:center;color:var(--sub);font-weight:700}
+.vhook{font-size:14px;line-height:1.7;margin-top:8px}
+.vgh{font-size:11.5px;font-weight:700;color:#6e6e73;margin:10px 0 2px;letter-spacing:.04em}
+.vgh:first-child{margin-top:2px}
+.vw{display:flex;align-items:center;gap:10px;min-height:46px}
+.vww{font-family:'New York','Times New Roman',Georgia,serif;font-size:16.5px;font-weight:700;width:96px;flex:none;line-height:1.3;word-break:break-word}
+.vwd{flex:1;min-width:0;font-size:13.5px;line-height:1.45}
+.vwd small{display:block;color:#6e6e73;font-size:12px}
+.vadd{width:36px;height:36px;flex:none;border-radius:999px;border:.5px solid var(--line2);background:var(--card);color:var(--ink);font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh1);transition:transform .18s var(--sp)}
+.vadd:active{transform:scale(.9)}
+.vadd.done{width:auto;padding:0 10px;font-size:11.5px;font-weight:700;color:#1e8a3c;background:var(--okbg);border-color:transparent;box-shadow:none}
+.vex{padding:8px 0;border-bottom:.5px solid var(--line)}
+.vex:last-child{border-bottom:0}
+.vex .e{font-family:'New York','Times New Roman',Georgia,serif;font-size:16px;line-height:1.55}
+.vex .e b,.vctx .s b{color:var(--blue)}
+.vex .j{font-size:13px;color:#6e6e73}
+.vexpl{margin-top:12px}
+.vctx{margin-top:8px;background:#fff8e6;border-radius:12px;padding:9px 12px}
+.vctx .k{color:#8a5a00}
+.vctx .m{font-size:15.5px;font-weight:700;margin-top:1px}
+.vctx .s{font-size:13.5px;color:var(--ink2);margin-top:3px;line-height:1.5}
+.vmini{display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;margin-top:9px;font-size:13px;line-height:1.55}
+.vmini .h{font-size:11.5px;font-weight:700;color:#6e6e73;padding-top:1px}
+.vst{display:inline-flex;margin-top:9px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;color:#1e8a3c;background:var(--okbg)}
+.vst.re{color:#8a5a00;background:#fff4e0}
+/* ===== カードの編集欄（質問画面・記録タブ共通） ===== */
+.cedit{background:var(--fill);border-radius:14px;padding:13px;margin:10px 0 4px;animation:fadeUp .3s var(--eo)}
+.cedit .seg{margin:6px 0 0}
+.cedit .seg button{padding:8px 4px;font-size:13px}
+.cedit .chips{margin-top:6px}
+.cedit input.en{font-family:'New York','Times New Roman',Georgia,serif;font-size:17px}
+.cehint{font-size:11.5px;color:#6e6e73;margin-top:4px}
+.cedit input[type=text]{background:var(--card)}
+.redit .cedit{background:none;padding:0;margin:0}
+.cedit .err{margin:10px 0 0}
+#askItems .chip{cursor:pointer}
+#askItems .chip.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,113,227,.14)}
+/* ===== 長文の単語タップ（案1a） ===== */
+.tw{cursor:pointer;border-radius:4px}
+.tw.tapped,.tgap{background:rgba(0,113,227,.13);box-shadow:inset 0 -2px 0 rgba(0,113,227,.6)}
+.tw.wk{background:#ffe9a8;padding:0 1px}
+.tw.wk.tapped{box-shadow:inset 0 -2px 0 rgba(0,113,227,.8)}
+.taphint{display:block;margin-top:12px;font-size:12.5px;line-height:1.8;color:#6e6e73}
+.taphint .n{display:inline-block;margin-right:6px;font-weight:700;color:var(--blue);background:rgba(0,113,227,.10);border-radius:999px;padding:0 10px}
+.unk{text-align:left;background:rgba(0,113,227,.06);border-radius:16px;padding:13px 14px;margin-top:14px}
+.unk .t{font-size:13px;font-weight:700}
+.unk .s{font-size:12px;color:#6e6e73;margin-top:1px}
+.unk .chips{margin-top:10px}
+.unk .chip.done{color:#1e8a3c}
 
 /* ===== passage / reading ===== */
 .ptitle{font-family:'New York','Times New Roman',Georgia,serif;font-size:19px;margin:8px 0 8px;font-weight:700;letter-spacing:-.01em}
@@ -331,12 +408,13 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
   <div id="askOut" hidden>
     <div class="card">
       <div class="lbl">解説</div>
-      <div id="askExp" class="exp"></div>
+      <div id="askExp" class="exp" data-vhost></div>
     </div>
     <div class="card" id="askItemsCard" hidden>
       <div class="lbl">保存したカード</div>
       <div id="askItems" class="chips" style="margin-top:8px"></div>
-      <div class="hint" style="margin-top:8px">誤抽出は × で削除。単語カードと読解テストに反映されます。</div>
+      <div id="askEdit"></div>
+      <div class="hint" style="margin-top:8px">タップで直せます。誤抽出は × で削除。単語カードと読解テストに反映されます。</div>
     </div>
   </div>
   <div class="card">
@@ -1035,10 +1113,327 @@ var PL = (function () {
   return { create: create, sha256: sha256, valid: valid, MAX_TRIES: MAX_TRIES, LOCK_MS: LOCK_MS };
 })();
 /* === pin-lock:end === */
+/* === vocab-view:start === */
+/* 単語解説（区分つき JSON）の整形と表示、読解の単語タップ、カード編集の判断。
+   DOM に触らない関数だけを置く（test/vocab-view.test.js がこのブロックをそのまま読み込む） */
+var VV = (function () {
+  var LIM = { entries: 16, parts: 4, senses: 8, syn: 3, ant: 2, fam: 4, ex: 2 };
+  var MAX_TAPS = 12;
+  var LOOKUP_BATCH = 6; // 読解の調べ1回の問い合わせで送る語句数（出力上限2000に収めるため）
+  var TYPE_OK = { vocab: 1, idiom: 1, grammar: 1, reading: 1 };
+  var SECS = [['parts', '成り立ち'], ['syn', '同義語・反義語'], ['fam', '仲間'], ['ex', '例文']];
+  function str(v, n) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n); }
+  function arr(v) { return Array.isArray(v) ? v : []; }
+  function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function rich(v) { return esc(v).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+
+  /* ---------- 整形 ---------- */
+  function words(list, max) {
+    return arr(list).map(function (x) {
+      if (typeof x === 'string') x = { front: x };
+      if (!x || typeof x !== 'object') return null;
+      var o = { front: str(x.front || x.word, 60), back: str(x.back || x.mean, 120), note: str(x.diff || x.note, 80) };
+      return o.front ? o : null;
+    }).filter(Boolean).slice(0, max);
+  }
+  function normEntry(e) {
+    if (!e || typeof e !== 'object') return null;
+    var front = str(e.front || e.word, 80);
+    if (!front) return null;
+    var pos = (typeof e.pos === 'string' ? [e.pos] : arr(e.pos)).map(function (p) { return str(p, 8); }).filter(Boolean).slice(0, 4);
+    return {
+      front: front,
+      type: (e.type === 'idiom' || /\s/.test(front)) ? 'idiom' : 'vocab',
+      pos: pos,
+      src: str(e.src, 80),
+      ctx: str(e.ctx, 120),
+      parts: arr(e.parts).map(function (p) { return p && typeof p === 'object' ? { p: str(p.p, 24), m: str(p.m, 30) } : null; })
+        .filter(function (p) { return p && p.p; }).slice(0, LIM.parts),
+      hook: str(e.hook, 160),
+      core: str(e.core, 160),
+      senses: arr(e.senses).map(function (x) {
+        return x && typeof x === 'object' ? { pos: str(x.pos, 8), sub: str(x.sub, 10), mean: str(x.mean, 160), usage: str(x.usage, 200) } : null;
+      }).filter(function (x) { return x && x.mean; }).slice(0, LIM.senses),
+      synonyms: words(e.synonyms, LIM.syn),
+      antonyms: words(e.antonyms, LIM.ant),
+      family: words(e.family, LIM.fam),
+      examples: arr(e.examples).map(function (x) { return x && typeof x === 'object' ? { en: str(x.en, 240), ja: str(x.ja, 240) } : null; })
+        .filter(function (x) { return x && x.en; }).slice(0, LIM.ex),
+      tips: str(e.tips, 160)
+    };
+  }
+  function normalizeVocab(obj) {
+    obj = (obj && typeof obj === 'object') ? obj : {};
+    return {
+      entries: arr(obj.entries).map(normEntry).filter(Boolean).slice(0, LIM.entries),
+      explanation: String(obj.explanation == null ? '' : obj.explanation).trim().slice(0, 6000),
+      items: arr(obj.items)
+    };
+  }
+
+  /* ---------- 文章（履歴の a・管理画面） ---------- */
+  function wt(w) { return w.front + (w.back ? ' ' + w.back : ''); }
+  function partsText(e) { return e.parts.map(function (p) { return p.p + (p.m ? '（' + p.m + '）' : ''); }).join('＋'); }
+  function entryText(e) {
+    var L = [e.front + (e.pos.length ? '（' + e.pos.join('・') + '）' : '')];
+    if (e.ctx) L.push('この文章での意味：' + e.ctx);
+    if (e.core) L.push('コア：' + e.core);
+    if (e.parts.length) L.push('成り立ち：' + partsText(e));
+    else if (e.hook) L.push('覚え方：' + e.hook);
+    e.senses.forEach(function (x) {
+      var k = [x.pos, x.sub].filter(Boolean).join('・');
+      L.push('・' + (k ? k + '：' : '') + x.mean + (x.usage ? '　' + x.usage : ''));
+    });
+    if (e.synonyms.length) L.push('同義語：' + e.synonyms.map(wt).join('、'));
+    if (e.antonyms.length) L.push('反義語：' + e.antonyms.map(wt).join('、'));
+    if (e.family.length) L.push('仲間：' + e.family.map(wt).join('、'));
+    e.examples.forEach(function (x) { L.push('例：' + x.en + (x.ja ? '（' + x.ja + '）' : '')); });
+    if (e.tips) L.push('注意：' + e.tips);
+    return L.join('\n');
+  }
+  function vocabText(v) { return v.entries.map(entryText).concat(v.explanation ? [v.explanation] : []).join('\n\n'); }
+
+  /* ---------- 表示（案1b） ---------- */
+  function names(list) { return list.map(function (w) { return w.front; }); }
+  function has(e, k) {
+    if (k === 'parts') return !!(e.parts.length || e.hook);
+    if (k === 'syn') return !!(e.synonyms.length || e.antonyms.length);
+    if (k === 'fam') return !!e.family.length;
+    return !!e.examples.length;
+  }
+  function preview(e, k) {
+    if (k === 'parts') return e.parts.length ? partsText(e) : e.hook;
+    if (k === 'syn') { var n = names(e.synonyms.concat(e.antonyms)); return n.slice(0, 3).join(', ') + (n.length > 3 ? ' ほか' : ''); }
+    if (k === 'fam') return names(e.family).join(', ');
+    return e.examples.length + 'つ';
+  }
+  function wordRows(list, g, ei, known) {
+    return list.map(function (w, j) {
+      var st = known ? known(w.front) : '';
+      var btn = st
+        ? '<span class="vadd done">' + (st === 'added' ? '追加済み' : 'カード済み') + '</span>'
+        : '<button class="vadd" data-e="' + ei + '" data-g="' + g + '" data-j="' + j + '" aria-label="' + esc(w.front) + 'をカードに追加">＋</button>';
+      return '<div class="vw"><span class="vww en">' + esc(w.front) + '</span><span class="vwd">' + esc(w.back)
+        + (w.note ? '<small>' + esc(w.note) + '</small>' : '') + '</span>' + btn + '</div>';
+    }).join('');
+  }
+  function body(e, k, ei, known) {
+    if (k === 'parts') {
+      return (e.parts.length ? '<div class="vparts">' + e.parts.map(function (p) {
+        return '<div class="vpart"><div class="m en">' + esc(p.p) + '</div><div class="j">' + esc(p.m) + '</div></div>';
+      }).join('<span class="vplus">＋</span>') + '</div>' : '') + (e.hook ? '<div class="vhook">' + rich(e.hook) + '</div>' : '');
+    }
+    if (k === 'syn') {
+      return (e.synonyms.length ? '<div class="vgh">同義語</div>' + wordRows(e.synonyms, 'syn', ei, known) : '')
+        + (e.antonyms.length ? '<div class="vgh">反義語</div>' + wordRows(e.antonyms, 'ant', ei, known) : '');
+    }
+    if (k === 'fam') return wordRows(e.family, 'fam', ei, known);
+    return e.examples.map(function (x) {
+      return '<div class="vex"><div class="e en">' + rich(x.en) + '</div>' + (x.ja ? '<div class="j">' + rich(x.ja) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  function markIn(sentence, phrase) {
+    var s = esc(sentence), p = esc(phrase);
+    var i = p ? s.toLowerCase().indexOf(p.toLowerCase()) : -1;
+    return i < 0 ? s : s.slice(0, i) + '<b>' + s.slice(i, i + p.length) + '</b>' + s.slice(i + p.length);
+  }
+  function entryHtml(e, ei, o) {
+    o = o || {};
+    var open = o.open || {};
+    var h = '<div class="vent" data-e="' + ei + '"><div class="vhead"><span class="vword en">' + esc(e.front) + '</span>'
+      + (e.type === 'idiom' ? '<span class="badge b-idiom">熟語</span>' : '')
+      + e.pos.map(function (p) { return '<span class="vpos">' + esc(p) + '</span>'; }).join('') + '</div>';
+    if (o.lookup && e.ctx) {
+      h += '<div class="vctx"><div class="k">この文章での意味</div><div class="m">' + esc(e.ctx) + '</div>'
+        + (o.sentence ? '<div class="s en">' + markIn(o.sentence, e.src || e.front) + '</div>' : '') + '</div>';
+    }
+    if (e.core) h += '<div class="vcore"><div class="k">コアイメージ</div><div class="v">' + rich(e.core) + '</div></div>';
+    if (e.senses.length) {
+      h += '<div class="vsenses">' + e.senses.map(function (x) {
+        return '<div class="vsense"><div class="vsp">' + esc(x.pos) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</div><div><div class="vsm">'
+          + rich(x.mean) + '</div>' + (x.usage ? '<div class="vsu">' + rich(x.usage) + '</div>' : '') + '</div></div>';
+      }).join('') + '</div>';
+    }
+    if (e.tips) h += '<div class="vtips">' + rich(e.tips) + '</div>';
+    if (o.lookup) {
+      var mini = [];
+      if (has(e, 'parts')) mini.push(['成り立ち', esc(preview(e, 'parts'))]);
+      if (has(e, 'syn')) mini.push(['同義・反義', e.synonyms.concat(e.antonyms).map(function (w) { return '<span class="en">' + esc(w.front) + '</span> ' + esc(w.back); }).join(' ／ ')]);
+      if (e.examples.length) mini.push(['例文', '<span class="en">' + rich(e.examples[0].en) + '</span>' + (e.examples[0].ja ? '<br>' + rich(e.examples[0].ja) : '')]);
+      if (mini.length) h += '<div class="vmini">' + mini.map(function (m) { return '<span class="h">' + m[0] + '</span><span>' + m[1] + '</span>'; }).join('') + '</div>';
+      if (o.status) h += '<span class="vst' + (o.status === 'reset' ? ' re' : '') + '">' + (o.status === 'reset' ? '既にカードあり → 箱1に戻しました' : '✓ カードに追加') + '</span>';
+    } else {
+      SECS.forEach(function (s) {
+        if (!has(e, s[0])) return;
+        var on = !!open[s[0]];
+        h += '<button class="vrow" data-sec="' + s[0] + '" aria-expanded="' + on + '"><span class="n">' + s[1] + '</span><span class="p">'
+          + esc(preview(e, s[0])) + '</span><span class="chev" aria-hidden="true">›</span></button>'
+          + '<div class="vbody" data-sec="' + s[0] + '"' + (on ? '' : ' hidden') + '>' + body(e, s[0], ei, o.known) + '</div>';
+      });
+    }
+    return h + '</div>';
+  }
+
+  /* ---------- 読解の単語タップ ---------- */
+  function tokenize(text) {
+    var out = [], re = /[A-Za-z][A-Za-z'’-]*/g, m, last = 0;
+    text = String(text == null ? '' : text);
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push({ w: false, v: text.slice(last, m.index), s: last });
+      out.push({ w: true, v: m[0], s: m.index });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ w: false, v: text.slice(last), s: last });
+    return out;
+  }
+  /* key は「ブロックID:語の通し番号」。tapped / marked は key の集合 */
+  function tapHtml(id, text, tapped, marked) {
+    var toks = tokenize(text), n = -1, out = '', prevOn = false;
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i];
+      if (!t.w) {
+        var nextOn = !!(toks[i + 1] && tapped && tapped[id + ':' + (n + 1)]);
+        out += (prevOn && nextOn && /^[ \t]+$/.test(t.v)) ? '<span class="tgap">' + esc(t.v) + '</span>' : esc(t.v).replace(/\n/g, '<br>');
+        continue;
+      }
+      n++;
+      var k = id + ':' + n, on = !!(tapped && tapped[k]);
+      out += '<span class="tw' + (marked && marked[k] ? ' wk' : '') + (on ? ' tapped' : '') + '" data-k="' + k + '">' + esc(t.v) + '</span>';
+      prevOn = on;
+    }
+    return out;
+  }
+  function sentenceAt(text, a, b) {
+    while (a > 0 && !/[.!?\n]/.test(text.charAt(a - 1))) a--;
+    while (b < text.length && !/[.!?\n]/.test(text.charAt(b))) b++;
+    if (b < text.length && text.charAt(b) !== '\n') b++;
+    return text.slice(a, b).replace(/\s+/g, ' ').trim().slice(0, 300);
+  }
+  function mergeTaps(blocks, tapped) {
+    var found = [];
+    arr(blocks).forEach(function (b) {
+      var text = String(b.text == null ? '' : b.text), n = -1, cur = null, sep = '';
+      tokenize(text).forEach(function (t) {
+        if (!t.w) { sep += t.v; return; }
+        n++;
+        var k = b.id + ':' + n;
+        if (tapped && tapped[k]) {
+          if (cur && /^[ \t]+$/.test(sep)) { cur.keys.push(k); cur.e = t.s + t.v.length; }
+          else { cur = { block: b.id, keys: [k], s: t.s, e: t.s + t.v.length, src: text }; found.push(cur); }
+        } else cur = null;
+        sep = '';
+      });
+    });
+    var out = [], seen = {};
+    found.forEach(function (c) {
+      var text = c.src.slice(c.s, c.e).replace(/\s+/g, ' '), key = text.toLowerCase();
+      if (seen[key]) { seen[key].keys = seen[key].keys.concat(c.keys); return; }
+      seen[key] = { block: c.block, keys: c.keys.slice(), text: text, sentence: sentenceAt(c.src, c.s, c.e) };
+      out.push(seen[key]);
+    });
+    return out;
+  }
+  function phraseKeys(id, text, fronts) {
+    var toks = tokenize(text).filter(function (t) { return t.w; }).map(function (t) { return t.v.toLowerCase(); }), out = {};
+    arr(fronts).forEach(function (f) {
+      var ws = String(f || '').toLowerCase().match(/[a-z][a-z'’-]*/g);
+      if (!ws) return;
+      for (var i = 0; i + ws.length <= toks.length; i++) {
+        var ok = true;
+        for (var j = 0; j < ws.length && ok; j++) ok = ws[j].length >= 4 ? toks[i + j].indexOf(ws[j]) === 0 : toks[i + j] === ws[j];
+        if (ok) for (var j2 = 0; j2 < ws.length; j2++) out[id + ':' + (i + j2)] = true;
+      }
+    });
+    return out;
+  }
+  /* 照合用: 小文字、曲がったアポストロフィを直し、両端の記号を取る */
+  function nw(s) { return String(s == null ? '' : s).toLowerCase().replace(/[’‘]/g, "'").replace(/^[^a-z]+|[^a-z]+$/g, '').replace(/\s+/g, ' '); }
+  /* 活用形の照合用の語幹（decline→declin、apply→appl） */
+  function stemOf(w) { return w.length > 3 && /[ey]$/.test(w) ? w.slice(0, -1) : w; }
+  /* 語句ごとに、当たった entry の番号。1つの entry は1つの語句だけに当てる */
+  function matchLookup(entries, phrases) {
+    entries = arr(entries); phrases = arr(phrases);
+    var used = {}, hits = phrases.map(function () { return []; });
+    var keys = phrases.map(function (p) { return nw(p && p.text); });
+    function claim(pi, ei) { used[ei] = true; hits[pi].push(ei); }
+    /* 1) src・原形と同じ */
+    keys.forEach(function (k, pi) { entries.forEach(function (e, ei) { if (!used[ei] && k && (nw(e.src) === k || nw(e.front) === k)) claim(pi, ei); }); });
+    /* 2) 熟語でない並びを語ごとに分けて返した */
+    keys.forEach(function (k, pi) {
+      if (hits[pi].length || k.indexOf(' ') < 0) return;
+      var parts = k.split(' ');
+      entries.forEach(function (e, ei) { if (!used[ei] && parts.indexOf(nw(e.src || e.front)) >= 0) claim(pi, ei); });
+    });
+    /* 3) 活用形（postponed → postpone、applied → apply） */
+    keys.forEach(function (k, pi) {
+      if (hits[pi].length || !k || k.indexOf(' ') >= 0) return;
+      entries.forEach(function (e, ei) {
+        if (hits[pi].length || used[ei]) return;
+        var f = nw(e.front);
+        if (f && f.indexOf(' ') < 0 && f.length >= 3 && k.indexOf(stemOf(f)) === 0) claim(pi, ei);
+      });
+    });
+    /* 4) 数が同じなら並び順（SYS_LOOKUP は words の順に返すよう指示している） */
+    if (entries.length === phrases.length) keys.forEach(function (k, pi) { if (!hits[pi].length && !used[pi]) claim(pi, pi); });
+    return hits;
+  }
+  /* 読解で調べた結果をどう扱うか。existing は問い合わせ前のカードの写し、seen は同じ調べの中で扱った見出し語（分割した問い合わせの間で共有）。
+     rows: {e, sentence, src, front, status:"reset"|"added", act（カードを操作するか）, raws（作るカード）}、looked: 調べ済みにする語句（小文字） */
+  function planLookup(v, phrases, existing, seen) {
+    var entries = arr(v && v.entries), aiItems = arr(v && v.items);
+    phrases = arr(phrases); seen = seen || {};
+    var hits = matchLookup(entries, phrases), claimed = {}, rows = [], looked = [], have = {};
+    arr(existing).forEach(function (it) { have[String(it.front).toLowerCase()] = true; });
+    function raws(e, f) {
+      var r = aiItems.filter(function (x) { return x && String(x.front || '').toLowerCase() === f && String(x.back || '').trim(); });
+      return r.length ? r : [{ type: e.type, pos: (e.type === 'vocab' && e.pos[0]) || '', front: e.front, back: e.ctx || (e.senses[0] || {}).mean || e.core || '', note: '' }];
+    }
+    function row(e, sentence, src) {
+      var f = e.front.toLowerCase();
+      if (seen[f]) return { e: e, sentence: sentence, src: src, front: f, status: seen[f], act: false, raws: [] };
+      var st = have[f] ? 'reset' : 'added';
+      seen[f] = st;
+      return { e: e, sentence: sentence, src: src, front: f, status: st, act: true, raws: st === 'added' ? raws(e, f) : [] };
+    }
+    phrases.forEach(function (p, pi) {
+      hits[pi].forEach(function (ei) { claimed[ei] = true; rows.push(row(entries[ei], String(p.sentence || ''), String(p.text || ''))); });
+      if (hits[pi].length) looked.push(String(p.text).toLowerCase());
+    });
+    var extra = entries.filter(function (e, i) { return !claimed[i]; });
+    extra.forEach(function (e) { rows.push(row(e, '', e.src || e.front)); });
+    /* 当たらなかった語句の解説は、当たらなかった entry の中にあるとみなして調べ済みにする（同じ照合でまた課金しない） */
+    if (extra.length) phrases.forEach(function (p, pi) { if (!hits[pi].length) looked.push(String(p.text).toLowerCase()); });
+    return { rows: rows, looked: looked };
+  }
+
+  /* ---------- カード編集の判断 ---------- */
+  function cardEditPlan(item, patch, items, normKey) {
+    var type = TYPE_OK[patch.type] ? patch.type : item.type;
+    var front = str(patch.front, 80);
+    var pos = type === 'vocab' ? str(patch.pos, 6) : '';
+    var back = String(patch.back == null ? '' : patch.back).trim().slice(0, 120);
+    var note = String(patch.note == null ? '' : patch.note).trim().slice(0, 80);
+    if (!front) return { ok: false, field: 'front', err: '見出し語を入力してください' };
+    if (!back) return { ok: false, field: 'back', err: '意味を入力してください' };
+    var dup = arr(items).some(function (x) { return x.id !== item.id && String(x.front).toLowerCase() === front.toLowerCase() && (x.pos || '') === pos; });
+    if (dup) return { ok: false, field: 'front', err: '同じ見出し語・品詞のカードがあります' };
+    var put = type === 'vocab' || type === 'idiom';
+    var key = put ? normKey(front, pos) : '';
+    /* 墓標は、見出し語・品詞が変わったか単語/熟語でなくなった時だけ（意味やメモだけの修正では、品詞なしのキーで共有中の古いカードも切らない） */
+    var oldPut = item.type === 'vocab' || item.type === 'idiom';
+    var changed = !put || !oldPut || normKey(item.front, item.pos || '') !== key;
+    return { ok: true, fields: { type: type, front: front, pos: pos, back: back, note: note }, put: put, key: key,
+      tombstone: item.busKey && changed ? item.busKey : null };
+  }
+
+  return { MAX_TAPS: MAX_TAPS, LOOKUP_BATCH: LOOKUP_BATCH, planLookup: planLookup, esc: esc, normalizeVocab: normalizeVocab, entryText: entryText, vocabText: vocabText, entryHtml: entryHtml,
+    tokenize: tokenize, tapHtml: tapHtml, mergeTaps: mergeTaps, phraseKeys: phraseKeys, matchLookup: matchLookup, cardEditPlan: cardEditPlan };
+})();
+/* === vocab-view:end === */
 const LS='eigo-coach:v1';
 const INTERVALS=EC.INTERVALS; // ライトナー箱→次回まで日数
 const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算。v1.1 以降は Worker が返す cost_usd を積算し、これは旧Worker・旧データの換算にだけ使う
-const APP_VER='eigo-coach 1.1';
+const APP_VER='eigo-coach 1.2';
 const TYPES={vocab:'単語',idiom:'熟語',grammar:'文法',reading:'読解'};
 const BUCKETS=[
  {id:1,name:'掲示・案内・広告',desc:'ポスターやお知らせから必要な情報を探す',fmt:'掲示物・ポスター形式。タイトル行＋日時・場所・料金・申込方法・注意事項を短い行で並べる。物語にしない。'},
@@ -1087,6 +1482,8 @@ function migrate(s){
   if(!s.days)s.days={};
   if(!s.streak||typeof s.streak.cur!=='number')s.streak={cur:0,best:0,last:''};
   if(!Array.isArray(s.tagDefs))s.tagDefs=[];
+  /* 単語解説の折りたたみ（案1b）の開閉を区分ごとに覚える */
+  if(!s.settings.vocabOpen||typeof s.settings.vocabOpen!=='object')s.settings.vocabOpen={parts:false,syn:false,fam:false,ex:false};
   s.items.forEach(function(it){
     if(typeof it.pos!=='string')it.pos='';
     if(!Array.isArray(it.tags))it.tags=[];
@@ -1280,21 +1677,26 @@ const SYS_VOCAB=[
 '- 多義語は、コアイメージから各意味への派生を1本の流れで説明する。',
 '- 語源が不確か、または分解が記憶の助けにならない語は、誤った語源をでっち上げず、コアイメージ・連想・対比など別の記憶フックを示す。',
 '- 品詞・語法（自動詞/他動詞、可算/不可算、相性の良い前置詞）、重要な派生語、アクセント位置（発音問題で狙われる語のみ）にも触れる。',
-'- 例文は英文＋和訳をセットで1つ。',
+'- 同義語（2〜3個）と反義語（あれば1〜2個）を、それぞれ訳と使い分けの一言を添えて示す。',
+'- 例文は英文＋和訳をセットで1〜2つ（やさしい英文で）。',
 '【熟語・句動詞】動詞のコアイメージ＋前置詞/副詞のコアイメージから、「なぜその意味になるか」を導く。',
 '例: put off = put(置く)+off(切り離して)=「予定を切り離して先に置く」→〜を延期する',
 '- 前置詞/副詞のコアイメージ（off=分離、over=覆う・越える、through=貫通、up=完了・上昇 など）を明示し、他の熟語にも転用できる形で教える。',
 '- 同じ前置詞/副詞を使う関連熟語、または同じ意味の言い換え表現を2〜3個セットで示し、使い分けを一言添える。',
 '出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
-'{"explanation":"解説（改行可、重要語は**で囲んでよい）","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
-'- explanation: 上の原則に従った解説本文。',
+'{"entries":[{"front":"見出し語","type":"vocab","pos":["動詞"],"parts":[{"p":"per-","m":"完全に"}],"hook":"","core":"コアイメージから意味への流れを1行で","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":"語法・相性の良い前置詞（英語＋訳）"}],"synonyms":[{"front":"...","back":"訳","diff":"使い分け"}],"antonyms":[{"front":"...","back":"訳","diff":""}],"family":[{"front":"...","back":"訳","note":"成り立ち"}],"examples":[{"en":"...","ja":"..."}],"tips":""}],"explanation":"","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
+'- entries: 解説した単語・熟語ごとに1つ。type は vocab(単語) / idiom(熟語・句動詞)。parts は接頭辞・語根・接尾辞（0〜4個）。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
+'- senses: 品詞ごと・意味ごとに分ける。sub は動詞なら「自動詞」「他動詞」、名詞なら「可算」「不可算」、それ以外は空文字。熟語は pos を「熟語」にし、目的語の取り方を usage に書く。重要語は**で囲んでよい。',
+'- synonyms 2〜3個、antonyms 0〜2個（無ければ[]）、family は上の原則の数（単語は同じ語根の語2〜4個と重要な派生語、熟語は関連熟語・言い換え2〜3個）、examples 1〜2個、tips はアクセント位置など注意があれば（無ければ空文字）。',
+'- 複数の単語・熟語を扱う時は、2語目以降を短く（synonyms 2・antonyms 1・family 2・examples 1 まで）。',
+'- 単語・熟語以外の質問（文法・語法など）は entries を [] にし、explanation に答える（改行可、重要語は**で囲んでよい）。',
 '- items: 学習カード。解説した単語・熟語本体に加え、セットで示した同語根語・関連熟語も入試価値が高ければカード化する。',
 '- type: vocab(単語) / idiom(熟語・句動詞)',
 '- pos: 品詞。名詞/動詞/形容詞/副詞/前置詞/接続詞/その他 のいずれか（vocabのみ。idiomは空文字）。',
 '- 同じ単語でも品詞が違う意味は別itemに分ける。同じ品詞の複数の意味は1枚のbackにまとめる。',
 '- front: 英語表記。back: 日本語の意味を簡潔に。',
 '- note: 30字以内で語源分解・成り立ちを書く（例:「per完全に+ceive取る=掴む」「put置く+off分離→延期」）。',
-'- itemsは価値があるものだけ0〜10個。',
+'- itemsは価値があるものだけ0〜10個。同義語・反義語は items に入れない（生徒が必要なものを個別に追加する）。',
 '入力の扱い:',
 '- 単語・熟語が1つまたは複数送られたら、それぞれ上の形式で解説する。',
 '- 英文が送られたら、入試レベルの単語・熟語を抽出して同様に解説する。',
@@ -1365,14 +1767,21 @@ function addItems(arr,srcQ){
   }
   return added;
 }
-function pushHist(q,a,mode){
-  S.asks.push({d:todayStr(),q:q.slice(0,800),a:String(a||'').slice(0,6000),mode:mode});
+function pushHist(q,a,mode,r){
+  const e={d:todayStr(),q:q.slice(0,800),a:String(a||'').slice(0,6000),mode:mode};
+  /* 区分つきの答え（v1.2）は整えた形も残し、履歴でも同じ表示にする */
+  if(r&&r.entries&&r.entries.length){
+    const rr={entries:r.entries,explanation:r.explanation||''};
+    if(JSON.stringify(rr).length<=8000)e.r=rr; // 端末の保存容量を守るため、大きすぎる時は文章(a)だけ残す
+  }
+  S.asks.push(e);
   if(S.asks.length>100)S.asks=S.asks.slice(-100);
   S.askTotal=(S.askTotal||0)+1;
 }
 
 async function doAsk(){
   const q=$('askInput').value.trim();
+  askEditId=null;
   if(!q){toast('質問を入力してください');return}
   const deep=S.settings.askMode==='deep';
   const btn=$('askBtn');btn.disabled=true;btn.textContent=deep?'精読中…（20秒ほど）':'考え中…';
@@ -1394,15 +1803,15 @@ async function doAsk(){
         save();
       }catch(e2){toast('カード抽出に失敗（解説は表示済み）');track('ask_err','ask',null,{mode:mode,stage:'extract',msg:String(e2.message).slice(0,200)})}
     }else{
-      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:1200,temperature:0.3,feature:'ask_vocab'});
-      const obj=parseModelJSON(content);
+      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:2000,temperature:0.3,feature:'ask_vocab'});
+      const v=VV.normalizeVocab(parseModelJSON(content));
+      added=addItems(v.items,q); // 先にカード化する（自動でカードにした仲間を最初から「カード済み」と表示するため）
       $('askOut').hidden=false;
-      $('askExp').innerHTML=nl2html(obj.explanation||'（解説なし）');
-      added=addItems(Array.isArray(obj.items)?obj.items:[],q);
-      pushHist(q,obj.explanation,'std');
+      showVocab($('askExp'),v);
+      pushHist(q,VV.vocabText(v)||'（解説なし）','std',v);
       save();
     }
-    renderAskItems(added);
+    lastAskAdded=added;renderAskItems(added);
     renderHist();
     renderCardStatus();
     touch();save();
@@ -1413,19 +1822,127 @@ async function doAsk(){
   }
   finally{btn.disabled=false;btn.textContent='質問する'}
 }
+/* 区分つきの単語解説（案1b）。el には data-vhost を付けておく（＋ボタンが el._vocab を参照する） */
+let lastAskAdded=[];
+function vocabKnown(front){const f=String(front).toLowerCase();return S.items.some(function(it){return it.front.toLowerCase()===f})?'card':''}
+function showVocab(el,v){
+  const open=S.settings.vocabOpen||{};
+  const h=v.entries.map(function(e,i){return VV.entryHtml(e,i,{open:open,known:vocabKnown})}).join('')
+    +(v.explanation?'<div class="exp vexpl">'+nl2html(v.explanation)+'</div>':'');
+  el.innerHTML=h||'（解説なし）';
+  el._vocab=v;
+}
+function toggleVocabSec(row){
+  const k=row.dataset.sec,on=row.getAttribute('aria-expanded')!=='true';
+  row.setAttribute('aria-expanded',String(on));
+  const b=row.nextElementSibling;if(b&&b.classList.contains('vbody'))b.hidden=!on;
+  if(!S.settings.vocabOpen)S.settings.vocabOpen={};
+  S.settings.vocabOpen[k]=on;save();
+}
+function addRelated(btn){
+  const host=btn.closest('[data-vhost]'),v=host&&host._vocab;if(!v)return;
+  const e=v.entries[Number(btn.dataset.e)];if(!e)return;
+  const g=btn.dataset.g,list=g==='syn'?e.synonyms:g==='ant'?e.antonyms:e.family,w=list[Number(btn.dataset.j)];
+  if(!w)return;
+  if(vocabKnown(w.front)){ // 同じ見出し語のカードが既にある（別の画面で作った等）なら足さない
+    const has=document.createElement('span');has.className='vadd done';has.textContent='カード済み';btn.replaceWith(has);return;
+  }
+  if(!w.back){toast('意味が無いため追加できません');return}
+  const added=addItems([{type:/\s/.test(w.front)?'idiom':'vocab',pos:'',front:w.front,back:w.back,note:w.note.slice(0,30)}],e.front);
+  const done=document.createElement('span');done.className='vadd done';done.textContent='追加済み';btn.replaceWith(done);
+  if(added.length){
+    if(host.id==='askExp'){lastAskAdded=lastAskAdded.concat(added);renderAskItems(lastAskAdded)}
+    save();renderCardStatus();
+    track('card_add','ask',null,{g:g});
+  }
+}
+document.addEventListener('click',function(ev){
+  const t=ev.target;if(!t||!t.closest)return;
+  const row=t.closest('.vrow');if(row){toggleVocabSec(row);return}
+  const add=t.closest('button.vadd');if(add)addRelated(add);
+});
+/* カードの編集欄（質問画面の保存カードと記録タブのカード一覧で共通） */
+const POS_LIST=['名詞','動詞','形容詞','副詞','前置詞','接続詞','その他'];
+function cardEditorHtml(it){
+  return '<div class="cedit">'
+    +'<div class="edrow"><label>見出し語</label><input type="text" class="ceFront en" value="'+esc(it.front)+'" maxlength="80" autocapitalize="off" autocomplete="off" spellcheck="false"><div class="cehint">直しても、復習の箱と記録はそのまま</div></div>'
+    +'<div class="edrow"><label>種類</label><div class="seg ceType">'+Object.keys(TYPES).map(function(k){return '<button type="button" data-type="'+k+'"'+(it.type===k?' class="on"':'')+'>'+TYPES[k]+'</button>'}).join('')+'</div></div>'
+    +'<div class="edrow cePosRow"'+(it.type==='vocab'?'':' hidden')+'><label>品詞</label><div class="chips cePos">'+POS_LIST.map(function(p){return '<button type="button" class="chip fchip'+(it.pos===p?' on':'')+'" data-pos="'+p+'">'+p+'</button>'}).join('')+'</div></div>'
+    +'<div class="edrow"><label>意味</label><input type="text" class="ceBack" value="'+esc(it.back)+'" maxlength="120"></div>'
+    +'<div class="edrow"><label>メモ（語源・成り立ちなど）</label><input type="text" class="ceNote" value="'+esc(it.note||'')+'" maxlength="80"></div>'
+    +'<div class="err ceErr" hidden></div>'
+    +'<div class="btnrow"><button type="button" class="btn danger ceDel" style="flex:0 0 96px">削除</button><button type="button" class="btn ceSave">保存</button></div>'
+    +'</div>';
+}
+function deleteCard(it,where){
+  if(it.busKey){if(!S.busDeleted)S.busDeleted=[];if(S.busDeleted.indexOf(it.busKey)<0)S.busDeleted.push(it.busKey);}
+  S.items=S.items.filter(function(x){return x.id!==it.id});
+  save();renderCardStatus();
+  track('card_del',where,null,{type:it.type,box:it.box});
+}
+function saveCardEdit(it,ed,where){
+  const tb=ed.querySelector('.ceType button.on'),pb=ed.querySelector('.cePos .on');
+  const patch={front:ed.querySelector('.ceFront').value,type:tb?tb.dataset.type:it.type,pos:pb?pb.dataset.pos:'',back:ed.querySelector('.ceBack').value,note:ed.querySelector('.ceNote').value};
+  const plan=VV.cardEditPlan(it,patch,S.items,JSUPP.normKey);
+  const er=ed.querySelector('.ceErr');
+  if(!plan.ok){er.textContent=plan.err;er.hidden=false;return false}
+  const frontChanged=plan.fields.front!==it.front;
+  /* 見出し語・品詞・種類が変わって共有バスのキーが変わる時は、古いキーを墓標に入れる（他アプリから古い見出し語が戻らないように） */
+  if(plan.tombstone){if(!S.busDeleted)S.busDeleted=[];if(S.busDeleted.indexOf(plan.tombstone)<0)S.busDeleted.push(plan.tombstone);delete it.busKey;delete it.busRev}
+  Object.assign(it,plan.fields);
+  if(it.type==='vocab'||it.type==='idiom'){
+   try{
+    if(S.busDeleted)S.busDeleted=S.busDeleted.filter(function(k){return k!==plan.key});
+    const _k=JSUPP.vocabPutCard(it.front,it.back,it.note,it.pos,EC.APP);
+    if(_k){it.busKey=_k;it.busRev=(JSUPP.readVocab().cards[_k]||{}).rev||1;}
+   }catch(e){}
+  }
+  save();toast('保存しました');renderCardStatus();
+  track('card_edit',where,null,{type:it.type,where:where,front:frontChanged});
+  return true;
+}
+function bindCardEditor(ed,it,where,after){
+  ed.addEventListener('click',function(e){e.stopPropagation()});
+  ed.querySelectorAll('.ceType button').forEach(function(b){b.addEventListener('click',function(){
+    ed.querySelectorAll('.ceType button').forEach(function(x){x.classList.toggle('on',x===b)});
+    ed.querySelector('.cePosRow').hidden=b.dataset.type!=='vocab';
+  })});
+  ed.querySelectorAll('.cePos button').forEach(function(b){b.addEventListener('click',function(){
+    const on=!b.classList.contains('on');
+    ed.querySelectorAll('.cePos button').forEach(function(x){x.classList.remove('on')});
+    if(on)b.classList.add('on');
+  })});
+  ed.querySelector('.ceSave').addEventListener('click',function(){if(saveCardEdit(it,ed,where))after(false)});
+  ed.querySelector('.ceDel').addEventListener('click',async function(){
+    if(!(await confirmBox('「'+it.front+'」のカードを削除します。よろしいですか？')))return;
+    deleteCard(it,where);after(true);
+  });
+}
+let askEditId=null;
 function renderAskItems(list){
-  const card=$('askItemsCard'),wrap=$('askItems');
-  if(!list.length){card.hidden=true;return}
+  if(list)lastAskAdded=list;
+  const card=$('askItemsCard'),wrap=$('askItems'),ed=$('askEdit');
+  lastAskAdded=lastAskAdded.filter(function(it){return S.items.indexOf(it)>=0});
+  if(!lastAskAdded.length){card.hidden=true;ed.innerHTML='';return}
   card.hidden=false;wrap.innerHTML='';
-  list.forEach(function(it){
-    const c=document.createElement('span');c.className='chip';
+  lastAskAdded.forEach(function(it){
+    const c=document.createElement('span');c.className='chip'+(askEditId===it.id?' on':'');c.tabIndex=0;c.setAttribute('role','button');
     c.innerHTML='<span class="badge b-'+it.type+'">'+TYPES[it.type]+'</span>'+esc(it.front)+(it.pos?'<small class="posb">'+esc(it.pos)+'</small>':'')+' <small>'+esc(it.back)+'</small> <button class="x" aria-label="削除">×</button>';
-    c.querySelector('.x').addEventListener('click',function(){
-      if(it.busKey){if(!S.busDeleted)S.busDeleted=[];if(S.busDeleted.indexOf(it.busKey)<0)S.busDeleted.push(it.busKey);}
-      S.items=S.items.filter(function(x){return x.id!==it.id});save();c.remove();renderCardStatus();
+    c.addEventListener('click',function(e){
+      if(e.target.classList.contains('x'))return;
+      askEditId=(askEditId===it.id)?null:it.id;renderAskItems();
+    });
+    c.querySelector('.x').addEventListener('click',function(e){
+      e.stopPropagation();
+      deleteCard(it,'ask');
+      if(askEditId===it.id)askEditId=null;
+      renderAskItems();
     });
     wrap.appendChild(c);
   });
+  const cur=lastAskAdded.find(function(it){return it.id===askEditId});
+  ed.innerHTML=cur?cardEditorHtml(cur):'';
+  if(cur)bindCardEditor(ed.firstElementChild,cur,'ask',function(){renderAskItems()});
 }
 let histAll=false;
 function renderHist(){
@@ -1437,9 +1954,12 @@ function renderHist(){
     const idx=S.asks.indexOf(h);
     return '<div class="hrow" data-idx="'+idx+'">'
       +'<div class="hhead"><span class="hdate num">'+esc(String(h.d||'').slice(5))+'</span>'
-      +'<span class="hmode">'+(h.mode==='deep'?'英文':'単語')+'</span>'
+      +'<span class="hmode">'+(h.mode==='deep'?'英文':h.mode==='lookup'?'読解':'単語')+'</span>'
       +'<span class="hq">'+esc(h.q||'')+'</span><button class="x" aria-label="削除">×</button></div>'
-      +'<div class="hbody" hidden><div class="hqfull">'+esc(h.q||'')+'</div><div class="exp">'+(h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')+'</div></div>'
+      +'<div class="hbody" hidden><div class="hqfull">'+esc(h.q||'')+'</div><div class="exp"'+(h.r?' data-vhost':'')+'>'
+      +(h.r?VV.normalizeVocab(h.r).entries.map(function(e,i){return VV.entryHtml(e,i,{open:S.settings.vocabOpen||{},known:vocabKnown,lookup:h.mode==='lookup'})}).join('')+(h.r.explanation?'<div class="exp vexpl">'+nl2html(h.r.explanation)+'</div>':'')
+        :h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')
+      +'</div></div>'
       +'</div>';
   }).join('');
   if(all.length>5){
@@ -1450,6 +1970,8 @@ function renderHist(){
     $('histList').appendChild(mb);
   }
   document.querySelectorAll('#histList .hrow').forEach(function(r){
+    const hh=S.asks[Number(r.dataset.idx)],ex=r.querySelector('.hbody .exp');
+    if(hh&&hh.r&&ex)ex._vocab=VV.normalizeVocab(hh.r);
     r.querySelector('.hhead').addEventListener('click',function(e){
       if(e.target.classList.contains('x'))return;
       const b=r.querySelector('.hbody');b.hidden=!b.hidden;
@@ -1490,6 +2012,20 @@ const SYS_READING=[
 '必ず次のJSONのみを出力:',
 '{"title":"英語タイトル","passage":"英文本文","translationJa":"本文全体の自然な日本語訳","questions":[{"q":"英語の設問","choices":["...","...","...","..."],"answer":0,"explanation":"日本語解説","relatedItemFronts":["設問に関係する弱点語句"]}],"usedItemFronts":["本文に織り込んだ弱点語句"],"pointJa":"この分野の解き方のコツを日本語で1文"}',
 'answerは0〜3のインデックス。弱点リストが空ならusedItemFrontsは[]。'
+].join('\n');
+
+const SYS_LOOKUP=[
+'あなたは難関大学受験英語のプロ講師。生徒が共通テスト形式の長文を解いた後、わからなかった語句を調べている。',
+'入力は {"title":"題名","words":[{"w":"生徒がタップした語句","s":"その語句を含む本文の1文"}]}。',
+'各語句について、その文での意味を最優先に、短く解説する。',
+'出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
+'{"entries":[{"src":"タップした語句そのまま","front":"原形（動詞の活用形・名詞の複数形は原形に）","type":"vocab","pos":["動詞"],"ctx":"この文での意味（日本語で簡潔に）","parts":[{"p":"post-","m":"後に"}],"hook":"","core":"コアイメージ（1行）","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":""}],"synonyms":[{"front":"...","back":"訳","diff":""}],"antonyms":[],"family":[],"examples":[{"en":"...","ja":"..."}],"tips":""}],"items":[{"type":"vocab","pos":"動詞","front":"原形","back":"日本語の意味を簡潔に","note":"30字以内の語源分解（不要なら空文字）"}]}',
+'- entries は words の順に。src は words の w をそのまま入れる。',
+'- 隣り合う複数語（例: in advance）は、熟語・句動詞・決まった言い方ならその語句全体を1つの entry（type は idiom、pos は []）にする。熟語でなければ語ごとに別の entry に分け、それぞれの src にはその語だけを入れる。',
+'- ctx は、その文で使われている意味。辞書の意味をそのまま並べない。',
+'- 短く: senses は文中の意味を含めて2つまで、synonyms 2つまで、antonyms 1つまで、family は空でよい、examples 1つ。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
+'- sub は動詞なら「自動詞」「他動詞」、名詞なら「可算」「不可算」、それ以外は空文字。',
+'- items: entries の各語句（原形）をカードにする。同じ単語でも品詞が違う意味は別itemに分ける。pos は 名詞/動詞/形容詞/副詞/前置詞/接続詞/その他 のいずれか（idiomは空文字）。固有名詞・数字・ごく基本的な語（the, is など）は items に入れない。'
 ].join('\n');
 
 function pickBucket(){
@@ -1548,7 +2084,7 @@ async function genReading(hard){
     const q=parseModelJSON(content);
     if(q.passage)q.passage=String(q.passage).replace(/<\/?[a-zA-Z][^>]*>/g,'').replace(/\n{3,}/g,'\n\n');
     if(!q.passage||!Array.isArray(q.questions)||!q.questions.length)throw new Error('生成結果が不完全でした。もう一度作成してください。');
-    currentQuiz={data:q,bucket:bucket,graded:false,hard:hard,shownAt:Date.now()};
+    currentQuiz={data:q,bucket:bucket,graded:false,hard:hard,shownAt:Date.now(),taps:{},looked:{},lookups:[],marks:{},busy:{}};
     renderQuiz();
     track('gen','reading',Date.now()-t0,{mode:'reading',bucket:bucket.id,hard:hard});
   }catch(e){
@@ -1563,9 +2099,9 @@ function renderQuiz(){
   let h='<div class="card">';
   h+='<div class="lbl">出題分野 '+bucket.id+'：'+esc(bucket.name)+(currentQuiz.hard?' <span class="hardb">難問</span>':'')+'</div>';
   if(data.title)h+='<h2 class="ptitle">'+esc(data.title)+'</h2>';
-  h+='<div class="passage" id="passageBox">'+nl2html(data.passage)+'</div></div>';
+  h+='<div class="passage" id="passageBox"><span class="tblk" data-b="p">'+VV.tapHtml('p',normStr(data.passage),currentQuiz.taps)+'</span></div><div class="taphint" id="tapHint"></div></div>';
   data.questions.forEach(function(qq,i){
-    h+='<div class="card qcard" data-i="'+i+'"><div class="qhead">Q'+(i+1)+'. '+esc(qq.q)+'</div>';
+    h+='<div class="card qcard" data-i="'+i+'"><div class="qhead">Q'+(i+1)+'. <span class="tblk" data-b="q'+i+'">'+VV.tapHtml('q'+i,String(qq.q||''),currentQuiz.taps)+'</span></div>';
     (qq.choices||[]).slice(0,4).forEach(function(c,j){
       h+='<label class="choice" data-j="'+j+'"><input type="radio" name="q'+i+'" value="'+j+'"><span class="bub">'+L[j]+'</span><span class="ctext">'+esc(c)+'</span></label>';
     });
@@ -1582,6 +2118,7 @@ function renderQuiz(){
     });
   });
   $('gradeBtn').addEventListener('click',gradeQuiz);
+  renderTapState();
   window.scrollTo(0,0);
 }
 function gradeQuiz(){
@@ -1633,25 +2170,144 @@ function gradeQuiz(){
     sec:Math.round((Date.now()-(currentQuiz.shownAt||Date.now()))/1000),boxMoves:changes.length});
   // 織り込んだ弱点語句を本文にハイライト（採点後に表示＝ネタバレ防止）
   const fronts=(data.usedItemFronts||[]).map(function(f){return String(f).trim()}).filter(Boolean).sort(function(a,b){return b.length-a.length});
-  let ph=esc(normStr(data.passage));
-  fronts.forEach(function(f){
-    try{ph=ph.replace(new RegExp(reEsc(esc(f)),'gi'),function(m){return '\u0001'+m+'\u0002'})}catch(e){}
+  currentQuiz.marks={p:VV.phraseKeys('p',normStr(data.passage),fronts)};
+  rerenderBlock('p');
+  /* 採点後は選択肢の語もタップできる（テスト中は答えを選ぶ操作と重なるため不可） */
+  data.questions.forEach(function(qq,i){
+    document.querySelectorAll('.qcard[data-i="'+i+'"] .choice').forEach(function(lb){
+      const j=Number(lb.dataset.j),id='c'+i+'_'+j;
+      lb.querySelector('.ctext').innerHTML='<span class="tblk" data-b="'+id+'">'+VV.tapHtml(id,String((qq.choices||[])[j]||''),currentQuiz.taps)+'</span>';
+    });
   });
-  ph=ph.replace(/\u0001/g,'<mark>').replace(/\u0002/g,'</mark>').replace(/\n/g,'<br>');
-  $('passageBox').innerHTML=ph;
   let rh='<div class="card result"><div class="score num">'+score+' / '+data.questions.length+'</div>';
+  rh+='<div class="unk" id="unkBox"></div><div id="lookupErr" class="err" hidden></div>';
   if(data.translationJa)rh+='<div class="transJa"><div class="lbl" style="margin-bottom:4px">全文和訳</div>'+nl2html(data.translationJa)+'</div>';
   if(data.pointJa)rh+='<p class="hint">コツ：'+esc(data.pointJa)+'</p>';
   if(fronts.length)rh+='<p class="hint">本文に織り込んだ弱点：'+fronts.map(function(f){return '<mark>'+esc(f)+'</mark>'}).join(' ')+'</p>';
   if(changes.length)rh+='<p class="hint">復習箱の更新：'+changes.map(function(c){return esc(c.front)+'→箱'+c.box}).join('、')+'</p>';
   rh+='<button id="againBtn" class="btn ghost">もう1題つくる</button></div>';
+  rh+='<div id="lookupOut"></div>';
   $('quizResult').innerHTML=rh;
   $('gradeBtn').hidden=true;
   beep(score===data.questions.length?'done':(score?'ok':'ng'));
   const wasHard=!!currentQuiz.hard;
   $('againBtn').addEventListener('click',function(){genReading(wasHard)});
+  renderTapState();renderLookups();
   renderCardStatus();
 }
+/* ---------- 長文の単語タップ（案1a） ---------- */
+function quizBlocks(){
+  const d=currentQuiz.data,b=[{id:'p',text:normStr(d.passage)}];
+  d.questions.forEach(function(qq,i){
+    b.push({id:'q'+i,text:String(qq.q||'')});
+    if(currentQuiz.graded)(qq.choices||[]).slice(0,4).forEach(function(c,j){b.push({id:'c'+i+'_'+j,text:String(c)})});
+  });
+  return b;
+}
+function rerenderBlock(id){
+  const el=document.querySelector('#quiz .tblk[data-b="'+id+'"]');if(!el)return;
+  const b=quizBlocks().find(function(x){return x.id===id});if(!b)return;
+  el.innerHTML=VV.tapHtml(id,b.text,currentQuiz.taps,currentQuiz.marks[id]);
+}
+function toggleTap(k){
+  const t=currentQuiz.taps;
+  if(t[k])delete t[k];
+  else{
+    t[k]=true;
+    /* 上限は「まだ調べていない語句」で数える（調べ済みの分は数えない） */
+    if(VV.mergeTaps(quizBlocks(),t).filter(function(p){return !currentQuiz.looked[p.text.toLowerCase()]}).length>VV.MAX_TAPS){delete t[k];toast('一度に調べられるのは'+VV.MAX_TAPS+'語までです');return}
+  }
+  rerenderBlock(k.split(':')[0]);
+  renderTapState();
+}
+function renderTapState(){
+  if(!currentQuiz)return;
+  const ph=VV.mergeTaps(quizBlocks(),currentQuiz.taps),hint=$('tapHint');
+  if(hint)hint.innerHTML=ph.length
+    ?'<span class="n num">'+ph.length+'語</span>'+(currentQuiz.graded?'に印。下の「わからなかった語」から調べられます':'に印。採点の後にまとめて調べられます')
+    :'知らない語はタップすると印を付けられます';
+  if(currentQuiz.graded)renderUnk(ph);
+}
+function renderUnk(ph){
+  const box=$('unkBox');if(!box)return;
+  if(!ph.length){box.innerHTML='<div class="s">知らない語は本文や設問をタップして印を付けると、ここでまとめて調べられます。</div>';return}
+  const busy=Object.keys(currentQuiz.busy).length>0;
+  const pending=ph.filter(function(p){const k=p.text.toLowerCase();return !currentQuiz.looked[k]&&!currentQuiz.busy[k]});
+  const any=Object.keys(currentQuiz.looked).length>0;
+  box.innerHTML='<div class="t">わからなかった語</div><div class="s">間違えて付けた印は × で外せます</div>'
+    +'<div class="chips">'+ph.map(function(p,i){
+      const k=p.text.toLowerCase(),done=currentQuiz.looked[k],now=currentQuiz.busy[k];
+      return '<span class="chip en'+(done?' done':'')+'">'+esc(p.text)+(done?' <small>✓</small>':now?' <small>…</small>':' <button class="x" data-i="'+i+'" aria-label="印を外す">×</button>')+'</span>';
+    }).join('')+'</div>'
+    +(busy?'<button class="btn" id="lookupBtn" disabled>調べています…</button>'
+      :pending.length?'<button class="btn" id="lookupBtn">'+(any?'残り'+pending.length+'語を調べる':pending.length+'語を調べる')+'</button>':'');
+  box.querySelectorAll('.x').forEach(function(x){x.addEventListener('click',function(){
+    const p=ph[Number(x.dataset.i)];
+    p.keys.forEach(function(k){delete currentQuiz.taps[k]});
+    p.keys.map(function(k){return k.split(':')[0]}).forEach(rerenderBlock);
+    renderTapState();
+  })});
+  const lb=$('lookupBtn');if(lb&&!busy)lb.addEventListener('click',function(){doLookup(pending)});
+}
+/* 調べた結果でカードを操作する（判断は VV.planLookup） */
+function applyLookup(plan){
+  return plan.rows.map(function(r){
+    let status=r.status;
+    if(r.act){
+      if(status==='reset')S.items.filter(function(it){return it.front.toLowerCase()===r.front}).forEach(function(it){gradeItem(it,false)});
+      else{const added=addItems(r.raws,r.src||r.e.front);status=added.length?'added':''}
+    }
+    return {e:r.e,sentence:r.sentence,status:status};
+  });
+}
+function renderLookups(){
+  const out=$('lookupOut');if(!out||!currentQuiz)return;
+  const L=currentQuiz.lookups;
+  out.innerHTML=L.length?'<div class="card"><div class="lbl">調べた語</div>'+L.map(function(r,i){return VV.entryHtml(r.e,i,{lookup:true,sentence:r.sentence,status:r.status})}).join('')+'</div>':'';
+}
+async function doLookup(pending){
+  const quiz=currentQuiz;
+  if(!quiz||!pending.length||Object.keys(quiz.busy).length)return;
+  pending.forEach(function(p){quiz.busy[p.text.toLowerCase()]=true});
+  renderTapState();
+  const er=$('lookupErr');if(er)er.hidden=true;
+  const data=quiz.data,t0=Date.now(),before=S.items.slice(),seen={};
+  let rowsAll=[];
+  try{
+    /* 出力上限に収めるため6語句ずつ問い合わせる（押すのは1回） */
+    for(let i=0;i<pending.length;i+=VV.LOOKUP_BATCH){
+      const part=pending.slice(i,i+VV.LOOKUP_BATCH);
+      const words=part.map(function(p){return {w:p.text,s:p.sentence}});
+      const content=await api([{role:'system',content:SYS_LOOKUP},{role:'user',content:JSON.stringify({title:String(data.title||''),words:words})}],{json:true,maxTokens:2000,temperature:0.3,feature:'lookup'});
+      if(quiz!==currentQuiz)return; // 問い合わせ中に別のテストへ移った。結果は捨てる（カードも作らない）
+      const v=VV.normalizeVocab(parseModelJSON(content));
+      const plan=VV.planLookup(v,part,before,seen);
+      if(!plan.rows.length)throw new Error('結果を読み取れませんでした。もう一度試してください。');
+      const res=applyLookup(plan);
+      plan.looked.forEach(function(k){quiz.looked[k]=true});
+      part.forEach(function(p){delete quiz.busy[p.text.toLowerCase()]});
+      quiz.lookups=quiz.lookups.concat(res);rowsAll=rowsAll.concat(res);
+      renderLookups();
+      pushHist('読解：'+String(data.title||'')+'：'+res.map(function(r){return r.e.front}).join(', '),VV.vocabText(v),'lookup',v);
+      renderHist();renderCardStatus();touch();save();
+    }
+    track('lookup','reading',rowsAll.length,{asked:pending.length,added:rowsAll.filter(function(r){return r.status==='added'}).length,
+      reset:rowsAll.filter(function(r){return r.status==='reset'}).length,ms:Date.now()-t0});
+  }catch(e){
+    if(quiz===currentQuiz){const el=$('lookupErr');if(el){el.textContent=e.message;el.hidden=false}}
+    track('ask_err','reading',null,{mode:'lookup',msg:String(e.message).slice(0,200)});
+  }finally{
+    quiz.busy={};
+    if(quiz===currentQuiz)renderTapState();
+  }
+}
+$('quiz').addEventListener('click',function(ev){
+  const w=ev.target&&ev.target.closest&&ev.target.closest('.tw');
+  if(!w||!currentQuiz)return;
+  if(w.closest('.choice')&&!currentQuiz.graded)return; // 選択肢はテスト中は答えを選ぶ操作
+  ev.preventDefault();ev.stopPropagation();
+  toggleTap(w.dataset.k);
+});
 function gradeItem(it,ok){
   EC.gradeItem(it,ok,addDays);
   if(it.busKey){try{JSUPP.vocabPushEvent(it.busKey,!!ok,EC.APP);}catch(e){}}
@@ -2264,9 +2920,7 @@ function renderRec(){
         tchips='<div class="hint">タグがまだありません。上の「タグ」欄で作成してください。</div>';
       }
       ed='<div class="redit">'
-        +'<div class="edrow"><label>意味</label><input type="text" class="edBack" value="'+esc(i.back)+'" maxlength="120"></div>'
-        +'<div class="edrow"><label>メモ（語源・成り立ちなど）</label><input type="text" class="edNote" value="'+esc(i.note||'')+'" maxlength="80"></div>'
-        +'<button class="btn ghost edsave edSave">この内容で保存</button>'
+        +cardEditorHtml(i)
         +'<div class="tlbl" style="margin-top:12px">タグ</div>'
         +tchips
         +'</div>';
@@ -2307,11 +2961,10 @@ function renderRec(){
       e.stopPropagation();
       const id=e.target.closest('.row').dataset.id;
       const _it=S.items.find(function(i){return i.id===id});
-      if(_it&&_it.busKey){if(!S.busDeleted)S.busDeleted=[];if(S.busDeleted.indexOf(_it.busKey)<0)S.busDeleted.push(_it.busKey);}
-      S.items=S.items.filter(function(i){return i.id!==id});
+      if(!_it)return;
+      deleteCard(_it,'records');
       if(recOpenId===id)recOpenId=null;
-      save();renderRec();renderCardStatus();
-      if(_it)track('card_del','records',null,{type:_it.type,box:_it.box});
+      renderRec();
     });
   });
   const ed=document.querySelector('#itemList .redit');
@@ -2319,20 +2972,8 @@ function renderRec(){
     const it=S.items.find(function(i){return i.id===recOpenId});
     if(it){
       ed.addEventListener('click',function(e){e.stopPropagation()});
-      ed.querySelector('.edSave').addEventListener('click',function(){
-        const b=(ed.querySelector('.edBack').value||'').trim();
-        if(!b){toast('意味を入力してください');return}
-        it.back=b;
-        it.note=(ed.querySelector('.edNote').value||'').trim();
-        if(it.type==='vocab'||it.type==='idiom'){
-         try{
-          const _k=JSUPP.vocabPutCard(it.front,it.back,it.note,it.pos,EC.APP);
-          if(_k){it.busKey=_k;it.busRev=(JSUPP.readVocab().cards[_k]||{}).rev||1;}
-         }catch(e){}
-        }
-        save();toast('保存しました');renderRec();renderCardStatus();
-        track('card_edit','records',null,{type:it.type});
-      });
+      const ced=ed.querySelector('.cedit');
+      bindCardEditor(ced,it,'records',function(gone){if(gone)recOpenId=null;renderRec();renderCardStatus()});
       ed.querySelectorAll('.tgl').forEach(function(tb){
         tb.addEventListener('click',function(e){
           e.stopPropagation();
