@@ -44,6 +44,7 @@ body{
 button{font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
+.en{font-family:'New York','Times New Roman',Georgia,serif}
 ::selection{background:rgba(255,59,48,.18)}
 
 /* ===== animations ===== */
@@ -202,6 +203,39 @@ input.pinin:disabled{opacity:.5}
 .vmini .h{font-size:11.5px;font-weight:700;color:#6e6e73;padding-top:1px}
 .vst{display:inline-flex;margin-top:9px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;color:#1e8a3c;background:var(--okbg)}
 .vst.re{color:#8a5a00;background:#fff4e0}
+/* ===== 英文解説（構文図・案1b＋折りたたみ） ===== */
+.dsrc{background:var(--fill);border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.6}
+.ddiff{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px;margin-top:10px;font-size:13px;color:var(--ink2)}
+.dstars{font-size:14px;letter-spacing:1px;color:var(--ink)}
+.dstars span{color:#c7c7cc}
+.dsh{font-size:15px;font-weight:700;margin-top:16px;padding-top:14px;border-top:.5px solid var(--line2)}
+.dtree{margin-top:8px;display:flex;flex-direction:column}
+.dtree+.dtree{margin-top:14px;padding-top:10px;border-top:.5px dashed var(--line2)}
+.dtn{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;padding:5px 0}
+.dtn.dsub{grid-template-columns:30px auto minmax(0,1fr);padding:2px 0 6px}
+.drole{display:inline-flex;align-items:center;justify-content:center;height:22px;min-width:26px;border-radius:7px;font-size:12px;font-weight:800;color:#fff;padding:0 5px;white-space:nowrap}
+.rS{background:#0071e3}.rV{background:#1d1d1f}.rO{background:#1b7f93}.rC{background:#5e5ce6}.rM{background:#8e8e93}
+.rx{background:var(--card);color:#6e6e73;border:1px solid rgba(60,60,67,.25);font-size:10.5px;font-weight:700}
+.dtw{font-size:16px;line-height:1.5;word-break:break-word}
+.dtw small{display:block;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:12px;color:#6e6e73;margin-top:1px}
+.dbr{color:#8e8e93;font-weight:700}
+.delb{width:30px;display:flex;justify-content:center;color:#c7c7cc;font-size:14px;padding-top:2px}
+.dlegend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11.5px;color:#6e6e73}
+.dlegend b{color:var(--ink2)}
+.dnote{font-size:13.5px;line-height:1.75;color:var(--ink2);margin-top:8px}
+.dtr{margin-top:10px;border-radius:12px;padding:10px 12px;background:var(--fill)}
+.dtr .k{font-size:11px;font-weight:700;color:#6e6e73;letter-spacing:.04em}
+.dtr .v{font-size:14.5px;line-height:1.75;margin-top:2px}
+.dtr.nat{background:#eef5ff}
+.dtr.nat .k{color:#0058b0}
+.dwarn{margin-top:10px;border-radius:12px;padding:9px 12px;background:#fff4e0;font-size:13px;line-height:1.65;color:#5c3b00}
+.dwarn b{color:#8a5a00}
+.drows{margin-top:14px}
+.dbody{font-size:14px;line-height:1.75}
+.dadvice{margin-top:14px;border-radius:14px;background:var(--ink);color:#fff;padding:12px 14px}
+.dadvice .k{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.04em}
+.dadvice .v{font-size:14.5px;font-weight:700;line-height:1.65;margin-top:2px}
+.dadvice b{color:#fff}
 /* ===== カードの編集欄（質問画面・記録タブ共通） ===== */
 .cedit{background:var(--fill);border-radius:14px;padding:13px;margin:10px 0 4px;animation:fadeUp .3s var(--eo)}
 .cedit .seg{margin:6px 0 0}
@@ -1121,6 +1155,7 @@ var VV = (function () {
   var MAX_TAPS = 12;
   var LOOKUP_BATCH = 6; // 読解の調べ1回の問い合わせで送る語句数（出力上限2000に収めるため）
   var TYPE_OK = { vocab: 1, idiom: 1, grammar: 1, reading: 1 };
+  var POS7 = { '名詞': 1, '動詞': 1, '形容詞': 1, '副詞': 1, '前置詞': 1, '接続詞': 1, 'その他': 1 };
   var SECS = [['parts', '成り立ち'], ['syn', '同義語・反義語'], ['fam', '仲間'], ['ex', '例文']];
   function str(v, n) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n); }
   function arr(v) { return Array.isArray(v) ? v : []; }
@@ -1132,7 +1167,8 @@ var VV = (function () {
     return arr(list).map(function (x) {
       if (typeof x === 'string') x = { front: x };
       if (!x || typeof x !== 'object') return null;
-      var o = { front: str(x.front || x.word, 60), back: str(x.back || x.mean, 120), note: str(x.diff || x.note, 80) };
+      var p = str(x.pos, 6);
+      var o = { front: str(x.front || x.word, 60), back: str(x.back || x.mean, 120), note: str(x.diff || x.note, 80), pos: POS7[p] ? p : '' };
       return o.front ? o : null;
     }).filter(Boolean).slice(0, max);
   }
@@ -1346,6 +1382,13 @@ var VV = (function () {
     });
     return out;
   }
+  /* 関連語の＋で作るカードの品詞。AI の品詞 → 無ければ同義語・反義語は見出し語の品詞（1つの時）。熟語は空 */
+  function relatedPos(e, w, g) {
+    if (!w || /\s/.test(String(w.front))) return '';
+    if (POS7[w.pos]) return w.pos;
+    if ((g === 'syn' || g === 'ant') && e && e.pos && e.pos.length === 1 && POS7[e.pos[0]]) return e.pos[0];
+    return '';
+  }
   /* 照合用: 小文字、曲がったアポストロフィを直し、両端の記号を取る */
   function nw(s) { return String(s == null ? '' : s).toLowerCase().replace(/[’‘]/g, "'").replace(/^[^a-z]+|[^a-z]+$/g, '').replace(/\s+/g, ' '); }
   /* 活用形の照合用の語幹（decline→declin、apply→appl） */
@@ -1426,14 +1469,137 @@ var VV = (function () {
       tombstone: item.busKey && changed ? item.busKey : null };
   }
 
-  return { MAX_TAPS: MAX_TAPS, LOOKUP_BATCH: LOOKUP_BATCH, planLookup: planLookup, esc: esc, normalizeVocab: normalizeVocab, entryText: entryText, vocabText: vocabText, entryHtml: entryHtml,
+  /* ---------- 英文解説（①〜⑩の文章）を区分に分け、②の「構造:」の行から構文図を作る ---------- */
+  var CIRC = '①②③④⑤⑥⑦⑧⑨⑩';
+  var ROLES = { S: 'rS', V: 'rV', O: 'rO', C: 'rC', M: 'rM' };
+  var ROLE_RE = /^[SVOCM][0-9₀-₉'′]*$/;
+  var DSECS = [['gram', '文法のポイント'], ['words', '単語・熟語'], ['para', '言い換え'], ['logic', '論理'], ['bg', '背景知識']];
+  var TITLES = /^(難易度|文構造|文法解説|重要単語|熟語|全文和訳|パラフレーズ|論理|背景知識|一言アドバイス)/;
+  function roleClass(r) { return ROLE_RE.test(r) ? ROLES[r.charAt(0)] : 'rx'; }
+  /* 見出し行から既知の見出し語と区切り記号だけを外す（「① ★★☆」「⑩ 理由で訳す。」の本文は残す） */
+  function headTail(head) {
+    var h = String(head || '').trim(), m = h.match(TITLES);
+    if (m) h = h.slice(m[0].length);
+    return h.replace(/^[\s…:：・-]+/, '').trim();
+  }
+  /* AI の書き方の揺れをそろえる（全角の［］、**で囲んだラベルや★、【減点ポイント】） */
+  function normDeep(t) {
+    return t.replace(/［/g, '[').replace(/］/g, ']')
+      .replace(/\*\*\s*(【直訳】|【自然訳】|【減点ポイント】|減点ポイント[:：])\s*\*\*/g, '$1')
+      .replace(/【減点ポイント】/g, '減点ポイント：')
+      .replace(/\*\*([★☆]{1,4})\*\*/g, '$1');
+  }
+  /* 「構造:」の行の骨組み。札を取り除いて何か残る（読めない札・途中で切れた・入れ子）なら使わない */
+  function skeleton(src) {
+    var chunks = [], cm, cre = /\[([SVOCM][0-9₀-₉'′]*)\s+([^\[\]]+)\]/g;
+    while ((cm = cre.exec(src))) chunks.push({ r: cm[1], t: cm[2].trim(), subs: [] });
+    var left = src.replace(/\[([SVOCM][0-9₀-₉'′]*)\s+([^\[\]]+)\]/g, '').replace(/\s+/g, '');
+    return chunks.length >= 2 && !left ? chunks : null;
+  }
+  function parseDeep(text, q) {
+    text = normDeep(String(text == null ? '' : text).replace(/\r\n?/g, '\n'));
+    var no = { ok: false, text: text };
+    if (/[\/／](速|深|作文|類題|訳)/.test(String(q || ''))) return no;
+    var re = /^[ \t]*([①-⑩])[ \t]*([^\n]*)$/gm, m, marks = [];
+    while ((m = re.exec(text))) marks.push({ n: CIRC.indexOf(m[1]) + 1, at: m.index, head: m[2], end: re.lastIndex });
+    if (marks.length < 2) return no;
+    /* 番号が増え続けない（文ごとに①〜⑩を繰り返す・本文の中で①②と箇条にする）時は読み取らない（後の区分で前の区分を消さない） */
+    for (var k = 1; k < marks.length; k++) if (marks[k].n <= marks[k - 1].n) return no;
+    var c = {};
+    marks.forEach(function (mk, i) {
+      var body = text.slice(mk.end, i + 1 < marks.length ? marks[i + 1].at : text.length).replace(/^\n+|\s+$/g, '');
+      c[mk.n] = [headTail(mk.head), body].filter(Boolean).join('\n').trim();
+    });
+    var d = { ok: true, lead: text.slice(0, marks[0].at).trim(), diff: { stars: 0, note: '' }, trees: [], structText: '', trans: null, transText: '',
+      gram: c[3] || '', words: [c[4], c[5]].filter(Boolean).join('\n'), para: c[7] || '', logic: c[8] || '', bg: c[9] || '', advice: c[10] || '' };
+    if (c[1]) {
+      var sm = c[1].match(/[★☆]{1,4}/);
+      d.diff.stars = sm ? Math.min(3, (sm[0].match(/★/g) || []).length) : 0;
+      d.diff.note = (sm ? c[1].replace(sm[0], '') : c[1]).replace(/^[\s…:：、。]+/, '').trim();
+    }
+    var cur = null, rest = [];
+    String(c[2] || '').split('\n').forEach(function (line) {
+      var L = line.trim();
+      if (!L) return;
+      var st = L.match(/^[^:：\[]{0,6}構造[:：]\s*(.+)$/), sk = st && skeleton(st[1]);
+      if (sk) { cur = { chunks: sk }; d.trees.push(cur); return; }
+      var km = cur && L.match(/^([SVOCM][0-9₀-₉'′]*)\s*[:：]\s*([^\s\[]+)\s*\[(.+)\]\s*(?:…|\.\.\.|[:：])?\s*(.*)$/);
+      if (km) {
+        for (var i = cur.chunks.length - 1; i >= 0; i--) {
+          if (cur.chunks[i].r === km[1]) { cur.chunks[i].subs.push({ label: km[2], t: km[3].trim(), note: km[4].trim() }); return; }
+        }
+      }
+      rest.push(L);
+    });
+    d.structText = rest.join('\n');
+    if (c[6]) {
+      var parts = c[6].split(/(【直訳】|【自然訳】|減点ポイント[:：])/), t = { lit: '', nat: '', warn: '', rest: parts[0].trim() }, seen = {}, dup = false;
+      for (var j = 1; j < parts.length; j += 2) {
+        var lab = parts[j].charAt(0) === '減' ? 'warn' : parts[j];
+        if (seen[lab]) dup = true;
+        seen[lab] = true;
+        var v = String(parts[j + 1] || '').trim();
+        if (parts[j] === '【直訳】') t.lit = v; else if (parts[j] === '【自然訳】') t.nat = v; else t.warn = v;
+      }
+      /* 文ごとの和訳など、同じラベルが2回出る時は分けずに文章のまま全部出す */
+      if ((t.lit || t.nat) && !dup) d.trans = t; else d.transText = c[6];
+    }
+    /* ★・構文図・和訳のどれも取れない答え（英文解説でない答え）は今の文章表示 */
+    if (!(d.diff.stars || d.trees.length || d.trans)) return no;
+    return d;
+  }
+  function nl(s) { return rich(s).replace(/\n/g, '<br>'); }
+  function brk(s) { return esc(s).replace(/\[|\]|\(|\)|&lt;|&gt;/g, function (x) { return '<span class="dbr">' + x + '</span>'; }); }
+  function deepHtml(d, o) {
+    o = o || {};
+    var open = o.open || {}, h = '<div class="dv">';
+    if (o.src) h += '<div class="dsrc en">' + esc(o.src) + '</div>';
+    if (d.diff.stars || d.diff.note) {
+      h += '<div class="ddiff">' + (d.diff.stars ? '<span class="dstars" aria-label="難易度' + d.diff.stars + '">' + '★★★'.slice(0, d.diff.stars) + '<span>' + '★★★'.slice(d.diff.stars) + '</span></span>' : '') + rich(d.diff.note) + '</div>';
+    }
+    if (d.lead) h += '<div class="dnote dlead">' + nl(d.lead) + '</div>';
+    if (d.trees.length || d.structText) h += '<div class="dsh">文の形</div>';
+    d.trees.forEach(function (t) {
+      h += '<div class="dtree">' + t.chunks.map(function (c) {
+        return '<div class="dtn"><span class="drole ' + roleClass(c.r) + '">' + c.r + '</span><span class="dtw en">' + brk(c.t) + '</span></div>'
+          + c.subs.map(function (s) {
+            return '<div class="dtn dsub"><span class="delb" aria-hidden="true">└</span><span class="drole ' + roleClass(s.label) + '">' + esc(s.label) + '</span>'
+              + '<span class="dtw en">' + brk('[' + s.t + ']') + (s.note ? '<small>' + rich(s.note) + '</small>' : '') + '</span></div>';
+          }).join('');
+      }).join('') + '</div>';
+    });
+    if (d.trees.length) h += '<div class="dlegend"><span><b>[ ]</b> 名詞のかたまり</span><span><b>( )</b> 名詞を説明</span><span><b>&lt; &gt;</b> 動詞や文を説明</span></div>';
+    if (d.structText) h += '<div class="dnote">' + nl(d.structText) + '</div>';
+    if (d.trans) {
+      h += '<div class="dsh">和訳</div>';
+      if (d.trans.nat) h += '<div class="dtr nat"><div class="k">自然訳</div><div class="v">' + nl(d.trans.nat) + '</div></div>';
+      if (d.trans.lit) h += '<div class="dtr"><div class="k">直訳</div><div class="v">' + nl(d.trans.lit) + '</div></div>';
+      if (d.trans.warn) h += '<div class="dwarn"><b>減点ポイント</b>　' + nl(d.trans.warn) + '</div>';
+      if (d.trans.rest) h += '<div class="dnote">' + nl(d.trans.rest) + '</div>';
+    } else if (d.transText) {
+      h += '<div class="dsh">和訳</div><div class="dnote">' + nl(d.transText) + '</div>';
+    }
+    var rows = DSECS.filter(function (s) { return d[s[0]]; });
+    if (rows.length) {
+      h += '<div class="drows">' + rows.map(function (s) {
+        var on = !!open[s[0]], en = s[0] === 'para' ? ' en' : '';
+        var pv = String(d[s[0]]).replace(/\*\*/g, '').replace(/\s+/g, ' ').slice(0, 40);
+        return '<button class="vrow" data-sec="d-' + s[0] + '" aria-expanded="' + on + '"><span class="n">' + s[1] + '</span><span class="p' + en + '">' + esc(pv)
+          + '</span><span class="chev" aria-hidden="true">›</span></button><div class="vbody dbody' + en + '" data-sec="d-' + s[0] + '"' + (on ? '' : ' hidden') + '>' + nl(d[s[0]]) + '</div>';
+      }).join('') + '</div>';
+    }
+    if (d.advice) h += '<div class="dadvice"><div class="k">この英文で覚えること</div><div class="v">' + nl(d.advice) + '</div></div>';
+    return h + '</div>';
+  }
+
+  return { parseDeep: parseDeep, deepHtml: deepHtml, relatedPos: relatedPos, MAX_TAPS: MAX_TAPS, LOOKUP_BATCH: LOOKUP_BATCH, planLookup: planLookup, esc: esc, normalizeVocab: normalizeVocab, entryText: entryText, vocabText: vocabText, entryHtml: entryHtml,
     tokenize: tokenize, tapHtml: tapHtml, mergeTaps: mergeTaps, phraseKeys: phraseKeys, matchLookup: matchLookup, cardEditPlan: cardEditPlan };
 })();
 /* === vocab-view:end === */
 const LS='eigo-coach:v1';
 const INTERVALS=EC.INTERVALS; // ライトナー箱→次回まで日数
 const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算。v1.1 以降は Worker が返す cost_usd を積算し、これは旧Worker・旧データの換算にだけ使う
-const APP_VER='eigo-coach 1.2';
+const APP_VER='eigo-coach 1.3';
 const TYPES={vocab:'単語',idiom:'熟語',grammar:'文法',reading:'読解'};
 const BUCKETS=[
  {id:1,name:'掲示・案内・広告',desc:'ポスターやお知らせから必要な情報を探す',fmt:'掲示物・ポスター形式。タイトル行＋日時・場所・料金・申込方法・注意事項を短い行で並べる。物語にしない。'},
@@ -1484,6 +1650,7 @@ function migrate(s){
   if(!Array.isArray(s.tagDefs))s.tagDefs=[];
   /* 単語解説の折りたたみ（案1b）の開閉を区分ごとに覚える */
   if(!s.settings.vocabOpen||typeof s.settings.vocabOpen!=='object')s.settings.vocabOpen={parts:false,syn:false,fam:false,ex:false};
+  if(!s.settings.deepOpen||typeof s.settings.deepOpen!=='object')s.settings.deepOpen={gram:false,words:false,para:false,logic:false,bg:false};
   s.items.forEach(function(it){
     if(typeof it.pos!=='string')it.pos='';
     if(!Array.isArray(it.tags))it.tags=[];
@@ -1684,10 +1851,11 @@ const SYS_VOCAB=[
 '- 前置詞/副詞のコアイメージ（off=分離、over=覆う・越える、through=貫通、up=完了・上昇 など）を明示し、他の熟語にも転用できる形で教える。',
 '- 同じ前置詞/副詞を使う関連熟語、または同じ意味の言い換え表現を2〜3個セットで示し、使い分けを一言添える。',
 '出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
-'{"entries":[{"front":"見出し語","type":"vocab","pos":["動詞"],"parts":[{"p":"per-","m":"完全に"}],"hook":"","core":"コアイメージから意味への流れを1行で","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":"語法・相性の良い前置詞（英語＋訳）"}],"synonyms":[{"front":"...","back":"訳","diff":"使い分け"}],"antonyms":[{"front":"...","back":"訳","diff":""}],"family":[{"front":"...","back":"訳","note":"成り立ち"}],"examples":[{"en":"...","ja":"..."}],"tips":""}],"explanation":"","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
+'{"entries":[{"front":"見出し語","type":"vocab","pos":["動詞"],"parts":[{"p":"per-","m":"完全に"}],"hook":"","core":"コアイメージから意味への流れを1行で","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":"語法・相性の良い前置詞（英語＋訳）"}],"synonyms":[{"front":"...","pos":"動詞","back":"訳","diff":"使い分け"}],"antonyms":[{"front":"...","pos":"動詞","back":"訳","diff":""}],"family":[{"front":"...","pos":"名詞","back":"訳","note":"成り立ち"}],"examples":[{"en":"...","ja":"..."}],"tips":""}],"explanation":"","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
 '- entries: 解説した単語・熟語ごとに1つ。type は vocab(単語) / idiom(熟語・句動詞)。parts は接頭辞・語根・接尾辞（0〜4個）。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
 '- senses: 品詞ごと・意味ごとに分ける。sub は動詞なら「自動詞」「他動詞」、名詞なら「可算」「不可算」、それ以外は空文字。熟語は pos を「熟語」にし、目的語の取り方を usage に書く。重要語は**で囲んでよい。',
 '- synonyms 2〜3個、antonyms 0〜2個（無ければ[]）、family は上の原則の数（単語は同じ語根の語2〜4個と重要な派生語、熟語は関連熟語・言い換え2〜3個）、examples 1〜2個、tips はアクセント位置など注意があれば（無ければ空文字）。',
+'- synonyms・antonyms・family の pos はその語の品詞（名詞/動詞/形容詞/副詞/前置詞/接続詞/その他。熟語・句動詞は空文字）。',,
 '- 複数の単語・熟語を扱う時は、2語目以降を短く（synonyms 2・antonyms 1・family 2・examples 1 まで）。',
 '- 単語・熟語以外の質問（文法・語法など）は entries を [] にし、explanation に答える（改行可、重要語は**で囲んでよい）。',
 '- items: 学習カード。解説した単語・熟語本体に加え、セットで示した同語根語・関連熟語も入試価値が高ければカード化する。',
@@ -1713,14 +1881,17 @@ const SYS_DEEP=[
 '- 覚えるべき知識には、他の英文にも使える一般化した法則を必ず添える。',
 '- 生徒が誤読しやすいポイントを先回りして警告する。',
 '- 解説は日本語。パラフレーズは英語で示す。',
-'- 出力はプレーンテキスト。見出しは①〜⑩、強調は**語句**のみ。Markdownの見出し記号(#)や表は使わない。',
+'- 出力はプレーンテキスト。見出しは行頭の①〜⑩、強調は**語句**のみ。Markdownの見出し記号(#)や表は使わない。',
 '入力が英文なら、次の順で解説する（入力の長さに応じて簡潔に。該当しない項目は省略してよい）:',
 '① 難易度 … ★☆☆〜★★★と、何が難しいかを一言',
-'② 文構造 … S/V/O/Cを明示。句・節が何を修飾するかを示し、入れ子構造は階層に分解して見せる',
+'② 文構造 … 次の書き方を必ず守る（英文が複数なら文ごとに繰り返す）:',
+'  構造: [S 主語] [V 動詞] [O 目的語] [C 補語] [M 修飾語]　← 骨組みだけを1行で。記号は S/V/O/C/M。[ ] の中に入れ子の [ ] は書かない',
+'  親の記号: 札 [英文] … 説明　← 骨組みの中身（節・句）を1行ずつ（例「S: 同格 [that we can learn anything (we want) online] … the idea の中身」）。札は S/V/O/C/M か短い日本語（同格・関係詞・名詞節・副詞節・不定詞・分詞など）。英文の中では ( ) を名詞を説明するかたまり、< > を動詞や文を説明するかたまりに使う',
+'  そのほかの説明は、その下に普通の文で続ける',
 '③ 文法解説 … 使われている文法事項＋「なぜそう判断できるのか」の見分け方＋一般化した型',
 '④ 重要単語 … 入試レベル語の意味・品詞・語法・短い例文1つ（発音問題で狙われる語はアクセント位置も）',
 '⑤ 熟語 … 意味と成り立ち、関連表現との使い分け・言い換え',
-'⑥ 全文和訳 … 【直訳】と【自然訳】。減点されやすい箇所（多義語の訳し分け・指示内容・無生物主語・否定や比較の範囲）を指摘',
+'⑥ 全文和訳 … 「【直訳】…」「【自然訳】…」「減点ポイント：…」の3行で。減点ポイントには減点されやすい箇所（多義語の訳し分け・指示内容・無生物主語・否定や比較の範囲）を書く',
 '⑦ パラフレーズ … 核心部分をやさしい英語で言い換える',
 '⑧ 論理 … ディスコースマーカーや指示語のつながり、主張／具体例／譲歩→逆接の構造（複数文のときのみ）',
 '⑨ 背景知識 … テーマ理解を助ける前提知識（論説文のみ・簡潔に）',
@@ -1793,7 +1964,7 @@ async function doAsk(){
       // 精読モード: ①本文解説はプレーンテキスト（途中で切れても読める）②カード抽出は別呼び出し
       const text=await api([{role:'system',content:SYS_DEEP},{role:'user',content:q}],{json:false,maxTokens:2000,temperature:0.3,feature:'ask_deep'});
       $('askOut').hidden=false;
-      $('askExp').innerHTML=nl2html(text);
+      showDeep($('askExp'),text,q);
       pushHist(q,text,'deep');
       save();
       try{
@@ -1825,6 +1996,12 @@ async function doAsk(){
 /* 区分つきの単語解説（案1b）。el には data-vhost を付けておく（＋ボタンが el._vocab を参照する） */
 let lastAskAdded=[];
 function vocabKnown(front){const f=String(front).toLowerCase();return S.items.some(function(it){return it.front.toLowerCase()===f})?'card':''}
+/* 英文解説（案1b＋折りたたみ）。①〜⑩と「構造:」の行を読み取れない時・コマンドの時は今の文章表示 */
+function deepView(text,q,withSrc){
+  const d=VV.parseDeep(text,q);
+  return d.ok?VV.deepHtml(d,{open:S.settings.deepOpen||{},src:withSrc?q:''}):nl2html(text);
+}
+function showDeep(el,text,q){el.innerHTML=deepView(text,q,true);el._vocab=null}
 function showVocab(el,v){
   const open=S.settings.vocabOpen||{};
   const h=v.entries.map(function(e,i){return VV.entryHtml(e,i,{open:open,known:vocabKnown})}).join('')
@@ -1836,6 +2013,7 @@ function toggleVocabSec(row){
   const k=row.dataset.sec,on=row.getAttribute('aria-expanded')!=='true';
   row.setAttribute('aria-expanded',String(on));
   const b=row.nextElementSibling;if(b&&b.classList.contains('vbody'))b.hidden=!on;
+  if(k.indexOf('d-')===0){if(!S.settings.deepOpen)S.settings.deepOpen={};S.settings.deepOpen[k.slice(2)]=on;save();return}
   if(!S.settings.vocabOpen)S.settings.vocabOpen={};
   S.settings.vocabOpen[k]=on;save();
 }
@@ -1848,7 +2026,7 @@ function addRelated(btn){
     const has=document.createElement('span');has.className='vadd done';has.textContent='カード済み';btn.replaceWith(has);return;
   }
   if(!w.back){toast('意味が無いため追加できません');return}
-  const added=addItems([{type:/\s/.test(w.front)?'idiom':'vocab',pos:'',front:w.front,back:w.back,note:w.note.slice(0,30)}],e.front);
+  const added=addItems([{type:/\s/.test(w.front)?'idiom':'vocab',pos:VV.relatedPos(e,w,g),front:w.front,back:w.back,note:w.note.slice(0,30)}],e.front);
   const done=document.createElement('span');done.className='vadd done';done.textContent='追加済み';btn.replaceWith(done);
   if(added.length){
     if(host.id==='askExp'){lastAskAdded=lastAskAdded.concat(added);renderAskItems(lastAskAdded)}
@@ -1958,7 +2136,7 @@ function renderHist(){
       +'<span class="hq">'+esc(h.q||'')+'</span><button class="x" aria-label="削除">×</button></div>'
       +'<div class="hbody" hidden><div class="hqfull">'+esc(h.q||'')+'</div><div class="exp"'+(h.r?' data-vhost':'')+'>'
       +(h.r?VV.normalizeVocab(h.r).entries.map(function(e,i){return VV.entryHtml(e,i,{open:S.settings.vocabOpen||{},known:vocabKnown,lookup:h.mode==='lookup'})}).join('')+(h.r.explanation?'<div class="exp vexpl">'+nl2html(h.r.explanation)+'</div>':'')
-        :h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')
+        :h.mode==='deep'&&h.a?deepView(h.a,h.q,false):h.a?nl2html(h.a):'<span class="hint">（この履歴には解説が保存されていません）</span>')
       +'</div></div>'
       +'</div>';
   }).join('');

@@ -185,6 +185,18 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 .tl .k{font-weight:600}
 .tl .d{color:var(--ink2);word-break:break-word}
 .tl .q{color:var(--muted);font-size:12px;word-break:break-word}
+.dayg{border-top:1px solid var(--line)}
+.dayh{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0;border:0;background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.dayh .d{font-size:13.5px;font-weight:800;flex:none;width:76px}
+.dayh .s{flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dayh .n{font-size:12px;font-weight:700;color:var(--ink2);flex:none}
+.dayh .chev,.qrow .chev{width:14px;color:var(--faint);text-align:center;flex:none;transition:transform .15s}
+.dayh[aria-expanded="true"] .chev,.qrow[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.dbody2{padding-bottom:8px}
+.tl .more{margin:4px 0 4px 54px}
+.qrow{display:flex;align-items:flex-start;gap:10px;width:100%;padding:0;margin-top:2px;border:0;background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.qrow .q{flex:1;min-width:0;margin-top:0}
+.qi .a{display:block;-webkit-line-clamp:unset;margin-top:6px;background:var(--fill);border-radius:10px;padding:9px 11px}
 
 /* フィードバック（本文が主役。日時・版・端末番号は1行の控えめなメタ情報に） */
 .fbl{display:flex;flex-direction:column}
@@ -691,6 +703,35 @@ function renderUsers(d) {
   $('users').replaceChildren(scroller(h('table', null, h('thead', null, head), tb)));
 }
 
+/* === admin-timeline:start === */
+/* 時系列を日付ごとにまとめる。日付の行には件数と主な操作（行動の記録だけで数える。AI の記録は質問と重なるため） */
+const TL_FIRST = 5;
+function groupByDay(items, fmtDate) {
+  const days = [];
+  for (const it of items) {
+    const day = fmtDate(it.ts);
+    let g = days[days.length - 1];
+    if (!g || g.day !== day) { g = { day: day, items: [] }; days.push(g); }
+    g.items.push(it);
+  }
+  return days;
+}
+function daySummary(items) {
+  const c = { ask: 0, reading: 0, listen: 0, card: 0 };
+  for (const it of items) {
+    if (it.src === 'ai') continue;
+    if (it.kind === 'ask') c.ask++;
+    else if (it.kind === 'card') c.card++;
+    else if (it.kind === 'test') {
+      let dd = null;
+      try { dd = it.data ? JSON.parse(it.data) : null; } catch (e) { dd = null; }
+      if (dd && dd.mode === 'listen') c.listen++; else c.reading++;
+    }
+  }
+  return [['質問', c.ask], ['読解', c.reading], ['リスニング', c.listen], ['カード', c.card]].filter((x) => x[1]).map((x) => x[0] + x[1]).join('・');
+}
+/* === admin-timeline:end === */
+
 /* 1人分の時系列 */
 function describe(it) {
   const dd = parseJSON(it.data) || {};
@@ -719,6 +760,29 @@ function describe(it) {
   }
   return { k: KIND[it.kind] || it.kind, d: d, err: /_err$/.test(it.kind) ? d : null };
 }
+function tlItem(it) {
+  const x = describe(it);
+  return h('div', { class: 'it' }, h('div', { class: 'tm num' }, fmtTime(it.ts)),
+    h('div', null, h('span', { class: 'k' }, x.k), x.d && !x.err ? h('span', { class: 'd' }, '　' + x.d) : null,
+      x.err ? h('div', { class: 'err small' }, '✕ ' + x.err) : null,
+      x.q ? h('div', { class: 'q' }, x.q.slice(0, 160)) : null));
+}
+function dayGroup(g, open) {
+  const body = h('div', { class: 'dbody2' });
+  let all = false;
+  const fill = () => {
+    body.replaceChildren(...(all ? g.items : g.items.slice(0, TL_FIRST)).map(tlItem));
+    if (!all && g.items.length > TL_FIRST) {
+      body.append(h('button', { class: 'linkbtn more', onclick: () => { all = true; fill(); } }, 'この日の残り ' + (g.items.length - TL_FIRST) + '件を表示'));
+    }
+  };
+  fill();
+  body.hidden = !open;
+  const head = h('button', { class: 'dayh', 'aria-expanded': String(open), onclick: (e) => {
+    body.hidden = !body.hidden; e.currentTarget.setAttribute('aria-expanded', String(!body.hidden));
+  } }, h('span', { class: 'd' }, g.day), h('span', { class: 's' }, daySummary(g.items)), h('span', { class: 'n num' }, g.items.length + '件'), h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'));
+  return h('div', { class: 'dayg' }, head, body);
+}
 async function openTimeline(uid) {
   state.selUid = uid;
   document.querySelectorAll('#users tbody tr').forEach((tr) => tr.classList.toggle('sel', tr.querySelector('.num').textContent === uid));
@@ -731,16 +795,8 @@ async function openTimeline(uid) {
       h('button', { class: 'linkbtn', onclick: () => { box.hidden = true; state.selUid = null; document.querySelectorAll('#users tr.sel').forEach((x) => x.classList.remove('sel')); } }, '閉じる'));
     const meta = h('div', { class: 'muted small' }, r.user ? deviceLabel(r.user.device) + '・初回 ' + fmtTs(r.user.first_ts) + '・最終 ' + fmtTs(r.user.last_ts) + '・最新 ' + r.items.length + '件' : '');
     const list = h('div');
-    let lastDay = '';
-    for (const it of r.items) {
-      const day = fmtDate(it.ts);
-      if (day !== lastDay) { list.append(h('div', { class: 'day' }, day)); lastDay = day; }
-      const x = describe(it);
-      list.append(h('div', { class: 'it' }, h('div', { class: 'tm num' }, fmtTime(it.ts)),
-        h('div', null, h('span', { class: 'k' }, x.k), x.d && !x.err ? h('span', { class: 'd' }, '　' + x.d) : null,
-          x.err ? h('div', { class: 'err small' }, '✕ ' + x.err) : null,
-          x.q ? h('div', { class: 'q' }, x.q.slice(0, 160)) : null)));
-    }
+    const days = groupByDay(r.items, fmtDate);
+    days.forEach((g, gi) => list.append(dayGroup(g, gi === 0)));
     box.replaceChildren(head, meta, r.items.length ? list : h('div', { class: 'empty' }, '記録がありません'));
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
@@ -858,10 +914,13 @@ async function loadQa(reset) {
   try {
     const r = await api({ view: 'qa', search: state.qa.search, offset: offset, owner: state.owner });
     for (const x of r.rows) {
-      const a = h('div', { class: 'a', title: 'タップで全文', onclick: (e) => e.currentTarget.classList.toggle('open') }, answerText(x));
+      const a = h('div', { class: 'a', hidden: true }, answerText(x));
+      const btn = h('button', { class: 'qrow', 'aria-expanded': 'false', onclick: (e) => {
+        a.hidden = !a.hidden; e.currentTarget.setAttribute('aria-expanded', String(!a.hidden));
+      } }, h('span', { class: 'q' }, x.q), h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'));
       $('qa').append(h('div', { class: 'qi' },
         h('div', { class: 'm num' }, fmtTs(x.ts) + '・' + x.uid + (x.tier === 'owner' ? '（本人）' : '') + '・' + (AI_FEATURE[x.feature] || x.feature) + '・' + x.model),
-        h('div', { class: 'q' }, x.q), a));
+        btn, a));
     }
     if (!$('qa').children.length) $('qa').append(h('div', { class: 'empty' }, state.qa.search ? '見つかりませんでした' : 'まだ質問がありません'));
     state.qa.next = r.next;
