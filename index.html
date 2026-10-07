@@ -195,6 +195,7 @@ input.pinin:disabled{opacity:.5}
 .vex .e b,.vctx .s b{color:var(--blue)}
 .vex .j{font-size:13px;color:#6e6e73}
 .vexpl{margin-top:12px}
+.vwarn{margin-top:12px;border-radius:12px;padding:9px 12px;background:#fff4e0;font-size:13px;line-height:1.6;color:#5c3b00}
 .vctx{margin-top:8px;background:#fff8e6;border-radius:12px;padding:9px 12px}
 .vctx .k{color:#8a5a00}
 .vctx .m{font-size:15.5px;font-weight:700;margin-top:1px}
@@ -204,13 +205,13 @@ input.pinin:disabled{opacity:.5}
 .vst{display:inline-flex;margin-top:9px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;color:#1e8a3c;background:var(--okbg)}
 .vst.re{color:#8a5a00;background:#fff4e0}
 /* ===== 英文解説（構文図・案1b＋折りたたみ） ===== */
-.dsrc{background:var(--fill);border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.6}
+.dsrc{background:var(--fill);border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .ddiff{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px;margin-top:10px;font-size:13px;color:var(--ink2)}
 .dstars{font-size:14px;letter-spacing:1px;color:var(--ink)}
 .dstars span{color:#c7c7cc}
 .dsh{font-size:15px;font-weight:700;margin-top:16px;padding-top:14px;border-top:.5px solid var(--line2)}
 .dtree{margin-top:8px;display:flex;flex-direction:column}
-.dtree+.dtree{margin-top:14px;padding-top:10px;border-top:.5px dashed var(--line2)}
+.dtree.dnext{margin-top:14px;padding-top:10px;border-top:.5px dashed var(--line2)}
 .dtn{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;padding:5px 0}
 .dtn.dsub{grid-template-columns:30px auto minmax(0,1fr);padding:2px 0 6px}
 .drole{display:inline-flex;align-items:center;justify-content:center;height:22px;min-width:26px;border-radius:7px;font-size:12px;font-weight:800;color:#fff;padding:0 5px;white-space:nowrap}
@@ -236,6 +237,8 @@ input.pinin:disabled{opacity:.5}
 .dadvice .k{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.04em}
 .dadvice .v{font-size:14.5px;font-weight:700;line-height:1.65;margin-top:2px}
 .dadvice b{color:#fff}
+.dswap{display:block;margin:12px 0 0 auto;padding:6px 2px;border:0;background:none;color:var(--blue);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer}
+.dtxt{font-size:14px;line-height:1.75}
 /* ===== カードの編集欄（質問画面・記録タブ共通） ===== */
 .cedit{background:var(--fill);border-radius:14px;padding:13px;margin:10px 0 4px;animation:fadeUp .3s var(--eo)}
 .cedit .seg{margin:6px 0 0}
@@ -604,7 +607,7 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
   </div>
   <div class="card">
     <div class="lbl">フィードバック</div>
-    <p class="hint" style="margin:6px 0 2px">不具合・改善案を開発者に送ります（匿名）。</p>
+    <p class="hint" style="margin:6px 0 2px">不具合・改善案を開発者に送ります（匿名）。AIの解説や問題には誤りがあり得ます。見つけたらここから知らせてください。</p>
     <textarea id="fbText" rows="3" placeholder="例：分野4の表が崩れていた／こんな機能が欲しい"></textarea>
     <button id="fbSend" class="btn">送信</button>
     <div id="fbOut" class="hint" style="margin-top:8px"></div>
@@ -613,25 +616,6 @@ nav button.on::before{content:'';position:absolute;top:5px;left:50%;transform:tr
     <div class="lbl">データ</div>
     <p class="hint">学習データ（カード・成績・履歴）はこの端末のブラウザ内（localStorage）に保存されます。定期的に「記録 → バックアップ」で書き出してください。</p>
     <button id="setReset" class="btn danger">全データを初期化</button>
-  </div>
-  <div class="card">
-    <div class="lbl">このアプリについて</div>
-    <p class="hint"><b>共テ英語コーチ</b>（eigo-coach <b>v1.1</b>）<br>
-    質問した内容が自動でカードになり、弱点を織り込んだテストが生成される自分専用の英語学習ツール。</p>
-    <p class="hint" style="margin-top:8px">
-    ・<b>質問</b>：単語・英熟語モードは語源と語構成から解説。英文解説モードは構造・文法根拠・和訳まで（コマンド対応）。<br>
-    ・<b>読解</b>：共通テスト形式・20分野を未出題／苦手優先で自動選択。「難問」は二次試験レベル（CEFR B2）。<br>
-    ・<b>リスニング</b>：6形式を生成。対話では話者ごとに男女の声を割り当てて聞き分けを訓練（速度0.75〜1.25倍）。<br>
-    ・<b>単語</b>：品詞・タグで絞り込み、赤シート式・5箱の間隔反復。発音の読み上げと5秒タイマー付き。</p>
-    <p class="hint" style="margin-top:8px">
-    AI：OpenAI（モデルはWorker側で固定）／音声：端末内蔵の読み上げ機能（追加費用なし）。<br>
-    学習データはこの端末のブラウザ内に保存されます。定期的にバックアップを。使い方の記録については上の「利用データ」を参照。</p>
-    <p class="hint" style="margin-top:8px">
-    <b>注意</b>：生成問題はAIによるもので、過去問演習の代替ではなく補助です。誤りを見つけたらフィードバックから報告してください。共通テストは配点の半分がリスニングです。</p>
-    <p class="hint" style="margin-top:8px">
-    <b>v1.1 の変更</b>：新しいAIモデルに対応／AIの出力が途中で切れた時の表示を改善／利用状況の記録（設定でオフにできます）。</p>
-    <p class="hint" style="margin-top:8px">
-    <b>v1.01 の変更</b>：読み上げ・効果音の音量調整／リスニングの男女声分け／単語カードの意味・メモ編集／出題範囲にリスニング6形式を追加／「難問」追加。</p>
   </div>
 </section>
 </main>
@@ -1468,6 +1452,80 @@ var VV = (function () {
     return { ok: true, fields: { type: type, front: front, pos: pos, back: back, note: note }, put: put, key: key,
       tombstone: item.busKey && changed ? item.busKey : null };
   }
+  /* タグ名の検査（記録タブの作成と、編集欄の「新しいタグ」で共通） */
+  function tagNamePlan(name, defs) {
+    var v = String(name == null ? '' : name).trim().replace(/^#/, '').trim();
+    defs = arr(defs);
+    if (!v) return { ok: false, err: 'タグ名を入力してください' };
+    if (v.length > 12) return { ok: false, err: 'タグ名は12文字まで' };
+    if (defs.indexOf(v) >= 0) return { ok: false, err: '同じタグがあります' };
+    if (defs.length >= 20) return { ok: false, err: 'タグは20個まで' };
+    return { ok: true, name: v };
+  }
+
+  /* ---------- 単語の答えの確認と聞き直し（v1.4: gpt-4o-mini が語を依頼と取り違える・文章だけで答える対策） ---------- */
+  var JA_RE = /[　-ヿ㐀-鿿＀-￯]/;
+  /* 入力が英語の語句だけ（単語・熟語、, / ; 、 で区切った並び）か。英文・質問・日本語まじり・数字は false */
+  function looksLexical(q) {
+    var s = String(q == null ? '' : q).replace(/、/g, ',').trim();
+    if (!s || s.length > 80 || JA_RE.test(s) || /[0-9.?!]/.test(s)) return false;
+    var segs = s.split(/[,\/;]/).map(function (x) { return x.trim(); }).filter(Boolean);
+    return segs.length > 0 && segs.every(function (seg) {
+      var w = seg.split(/\s+/);
+      return w.length <= 5 && w.every(function (x) { return /^[A-Za-z][A-Za-z'’-]*$/.test(x); });
+    });
+  }
+  /* normalizeVocab 後の答えの問題。'empty'（何も無い）/ 'noentry'（語句なのに区分が無く文章だけ）/ ''（良い答え） */
+  function vocabProblem(v, lexical) {
+    var n = v && v.entries ? v.entries.length : 0, ex = v && v.explanation ? String(v.explanation).trim() : '';
+    if (!n && !ex) return 'empty';
+    if (!n && lexical) return 'noentry';
+    return '';
+  }
+  function quoteQ(q) { return '「' + String(q == null ? '' : q).replace(/\s+/g, ' ').trim().slice(0, 80) + '」'; }
+  /* 語句の入力の時にシステム指示の末尾へ足す1行 */
+  function lexicalNote(q) { return '今回の入力' + quoteQ(q) + 'は解説する英語の語句そのもの。依頼や質問ではないので、聞き返さず entries で解説する。'; }
+  /* 聞き直しの時にシステム指示の末尾へ足す行（理由ごと） */
+  function retryNote(why, q) {
+    if (why === 'noentry') return '【聞き直し】前の出力は entries が空だった。' + quoteQ(q) + 'を entries に1件以上入れ、決められたJSONだけを出力する。';
+    if (why === 'parse') return '【聞き直し】前の出力は決められたJSONとして読めなかった。' + quoteQ(q) + 'について、決められたJSONだけを出力する（前後の文章・コードフェンス禁止）。';
+    return '【聞き直し】前の出力は空だった。' + quoteQ(q) + 'について、決められたJSONの形で必ず答える。';
+  }
+  /* 1回聞いて judge で確かめ、問題があれば note(理由) を足して1回だけ聞き直す。ask(extra) は答えの文字列の Promise（extra はシステム指示の末尾に足す行）。
+     ask の失敗（通信など）は聞き直さずにそのまま投げる。戻り値 {v, why, retried, first（1回目の理由）, err} */
+  function askChecked(ask, judge, note) {
+    return new Promise(function (res) { res(ask('')); }).then(function (c1) {
+      var r1 = judge(c1);
+      if (!r1.why) return { v: r1.v, why: '', retried: false };
+      /* 1回目に文章だけはある（noentry）時は、聞き直しが失敗・空・読めなくても1回目の文章を出す（受け取った答えを捨てない） */
+      function keep(err) { return { v: r1.v, why: 'noentry', retried: true, first: 'noentry', err: err }; }
+      return new Promise(function (res) { res(ask('\n' + note(r1.why))); }).then(function (c2) {
+        var r2 = judge(c2);
+        if (r1.why === 'noentry' && (r2.why === 'empty' || r2.why === 'parse')) return keep(r2.err);
+        return { v: r2.v, why: r2.why, retried: true, first: r1.why, err: r2.err };
+      }, function (e) {
+        if (r1.why === 'noentry') return keep(e);
+        throw e;
+      });
+    });
+  }
+  /* 単語の質問の答えの判定。parse は JSON を読む関数（読めなければ投げる） */
+  function judgeVocab(parse, lexical) {
+    return function (content) {
+      var v;
+      try { v = normalizeVocab(parse(content)); } catch (e) { return { v: null, why: 'parse', err: e }; }
+      return { v: v, why: vocabProblem(v, lexical) };
+    };
+  }
+  /* 読解の調べの答えの判定。調べた語に当たる entry が無ければ 'empty'（planLookup は行を作った時だけ seen に書く） */
+  function judgeLookup(parse, part, before, seen) {
+    return function (content) {
+      var v;
+      try { v = normalizeVocab(parse(content)); } catch (e) { return { v: null, why: 'parse', err: e }; }
+      var plan = planLookup(v, part, before, seen);
+      return { v: { v: v, plan: plan }, why: plan.rows.length ? '' : 'empty' };
+    };
+  }
 
   /* ---------- 英文解説（①〜⑩の文章）を区分に分け、②の「構造:」の行から構文図を作る ---------- */
   var CIRC = '①②③④⑤⑥⑦⑧⑨⑩';
@@ -1496,6 +1554,16 @@ var VV = (function () {
     var left = src.replace(/\[([SVOCM][0-9₀-₉'′]*)\s+([^\[\]]+)\]/g, '').replace(/\s+/g, '');
     return chunks.length >= 2 && !left ? chunks : null;
   }
+  /* 子の行「親: 札 [英文] … 説明」を分ける。[ ] は対になる括弧で区切る（説明の中の [ ] を英文に取り込まない・英文の中の入れ子は保つ） */
+  function childLine(L) {
+    var m = L.match(/^([SVOCM][0-9₀-₉'′]*)\s*[:：]\s*([^\s\[]+)\s*\[/);
+    if (!m) return null;
+    var i = m[0].length, depth = 1, j = i;
+    while (j < L.length && depth) { if (L[j] === '[') depth++; else if (L[j] === ']') depth--; j++; }
+    var t = depth ? '' : L.slice(i, j - 1).trim();
+    if (!t) return null;
+    return { r: m[1], label: m[2], t: t, note: L.slice(j).replace(/^\s*(?:…|\.\.\.|[:：])?\s*/, '').trim() };
+  }
   function parseDeep(text, q) {
     text = normDeep(String(text == null ? '' : text).replace(/\r\n?/g, '\n'));
     var no = { ok: false, text: text };
@@ -1522,14 +1590,15 @@ var VV = (function () {
       var L = line.trim();
       if (!L) return;
       var st = L.match(/^[^:：\[]{0,6}構造[:：]\s*(.+)$/), sk = st && skeleton(st[1]);
-      if (sk) { cur = { chunks: sk }; d.trees.push(cur); return; }
-      var km = cur && L.match(/^([SVOCM][0-9₀-₉'′]*)\s*[:：]\s*([^\s\[]+)\s*\[(.+)\]\s*(?:…|\.\.\.|[:：])?\s*(.*)$/);
-      if (km) {
+      if (sk) { cur = { chunks: sk, note: '' }; d.trees.push(cur); return; }
+      var ch = cur && childLine(L);
+      if (ch) {
         for (var i = cur.chunks.length - 1; i >= 0; i--) {
-          if (cur.chunks[i].r === km[1]) { cur.chunks[i].subs.push({ label: km[2], t: km[3].trim(), note: km[4].trim() }); return; }
+          if (cur.chunks[i].r === ch.r) { cur.chunks[i].subs.push({ label: ch.label, t: ch.t, note: ch.note }); return; }
         }
       }
-      rest.push(L);
+      /* 図の後の文はその図の下に、最初の図より前の文（と図が無い時の全部）は図の前に出す */
+      if (cur) cur.note += (cur.note ? '\n' : '') + L; else rest.push(L);
     });
     d.structText = rest.join('\n');
     if (c[6]) {
@@ -1559,17 +1628,18 @@ var VV = (function () {
     }
     if (d.lead) h += '<div class="dnote dlead">' + nl(d.lead) + '</div>';
     if (d.trees.length || d.structText) h += '<div class="dsh">文の形</div>';
-    d.trees.forEach(function (t) {
-      h += '<div class="dtree">' + t.chunks.map(function (c) {
+    if (d.structText) h += '<div class="dnote">' + nl(d.structText) + '</div>';
+    d.trees.forEach(function (t, ti) {
+      h += '<div class="dtree' + (ti ? ' dnext' : '') + '">' + t.chunks.map(function (c) {
         return '<div class="dtn"><span class="drole ' + roleClass(c.r) + '">' + c.r + '</span><span class="dtw en">' + brk(c.t) + '</span></div>'
           + c.subs.map(function (s) {
             return '<div class="dtn dsub"><span class="delb" aria-hidden="true">└</span><span class="drole ' + roleClass(s.label) + '">' + esc(s.label) + '</span>'
               + '<span class="dtw en">' + brk('[' + s.t + ']') + (s.note ? '<small>' + rich(s.note) + '</small>' : '') + '</span></div>';
           }).join('');
       }).join('') + '</div>';
+      if (ti === d.trees.length - 1) h += '<div class="dlegend"><span><b>[ ]</b> 名詞のかたまり</span><span><b>( )</b> 名詞を説明</span><span><b>&lt; &gt;</b> 動詞や文を説明</span></div>';
+      if (t.note) h += '<div class="dnote">' + nl(t.note) + '</div>';
     });
-    if (d.trees.length) h += '<div class="dlegend"><span><b>[ ]</b> 名詞のかたまり</span><span><b>( )</b> 名詞を説明</span><span><b>&lt; &gt;</b> 動詞や文を説明</span></div>';
-    if (d.structText) h += '<div class="dnote">' + nl(d.structText) + '</div>';
     if (d.trans) {
       h += '<div class="dsh">和訳</div>';
       if (d.trans.nat) h += '<div class="dtr nat"><div class="k">自然訳</div><div class="v">' + nl(d.trans.nat) + '</div></div>';
@@ -1593,13 +1663,15 @@ var VV = (function () {
   }
 
   return { parseDeep: parseDeep, deepHtml: deepHtml, relatedPos: relatedPos, MAX_TAPS: MAX_TAPS, LOOKUP_BATCH: LOOKUP_BATCH, planLookup: planLookup, esc: esc, normalizeVocab: normalizeVocab, entryText: entryText, vocabText: vocabText, entryHtml: entryHtml,
-    tokenize: tokenize, tapHtml: tapHtml, mergeTaps: mergeTaps, phraseKeys: phraseKeys, matchLookup: matchLookup, cardEditPlan: cardEditPlan };
+    tokenize: tokenize, tapHtml: tapHtml, mergeTaps: mergeTaps, phraseKeys: phraseKeys, matchLookup: matchLookup, cardEditPlan: cardEditPlan,
+    tagNamePlan: tagNamePlan, looksLexical: looksLexical, vocabProblem: vocabProblem, lexicalNote: lexicalNote, retryNote: retryNote,
+    askChecked: askChecked, judgeVocab: judgeVocab, judgeLookup: judgeLookup };
 })();
 /* === vocab-view:end === */
 const LS='eigo-coach:v1';
 const INTERVALS=EC.INTERVALS; // ライトナー箱→次回まで日数
 const PRICE={inPerM:0.15,outPerM:0.60,yen:155}; // gpt-4o-mini 概算。v1.1 以降は Worker が返す cost_usd を積算し、これは旧Worker・旧データの換算にだけ使う
-const APP_VER='eigo-coach 1.3';
+const APP_VER='eigo-coach 1.4';
 const TYPES={vocab:'単語',idiom:'熟語',grammar:'文法',reading:'読解'};
 const BUCKETS=[
  {id:1,name:'掲示・案内・広告',desc:'ポスターやお知らせから必要な情報を探す',fmt:'掲示物・ポスター形式。タイトル行＋日時・場所・料金・申込方法・注意事項を短い行で並べる。物語にしない。'},
@@ -1818,6 +1890,8 @@ async function api(messages,opt){
     if(ch&&ch.finish_reason==='length')throw new Error('AIの出力が上限で途中で切れました。もう一度試してください。');
     throw new Error('応答が空でした。もう一度試してください。');
   }
+  /* JSON の答えが上限で切れたら閉じ括弧が無く読めない。聞き直しても同じ上限でまた切れるので、ここで止める（文章の答えは途中までで読める） */
+  if(ch.finish_reason==='length'&&opt.json!==false)throw new Error('AIの出力が上限で途中で切れました。もう一度試してください。');
   return c;
 }
 
@@ -1855,9 +1929,10 @@ const SYS_VOCAB=[
 '- entries: 解説した単語・熟語ごとに1つ。type は vocab(単語) / idiom(熟語・句動詞)。parts は接頭辞・語根・接尾辞（0〜4個）。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
 '- senses: 品詞ごと・意味ごとに分ける。sub は動詞なら「自動詞」「他動詞」、名詞なら「可算」「不可算」、それ以外は空文字。熟語は pos を「熟語」にし、目的語の取り方を usage に書く。重要語は**で囲んでよい。',
 '- synonyms 2〜3個、antonyms 0〜2個（無ければ[]）、family は上の原則の数（単語は同じ語根の語2〜4個と重要な派生語、熟語は関連熟語・言い換え2〜3個）、examples 1〜2個、tips はアクセント位置など注意があれば（無ければ空文字）。',
-'- synonyms・antonyms・family の pos はその語の品詞（名詞/動詞/形容詞/副詞/前置詞/接続詞/その他。熟語・句動詞は空文字）。',,
+'- synonyms・antonyms・family の pos はその語の品詞（名詞/動詞/形容詞/副詞/前置詞/接続詞/その他。熟語・句動詞は空文字）。',
 '- 複数の単語・熟語を扱う時は、2語目以降を短く（synonyms 2・antonyms 1・family 2・examples 1 まで）。',
 '- 単語・熟語以外の質問（文法・語法など）は entries を [] にし、explanation に答える（改行可、重要語は**で囲んでよい）。',
+'- 入力が英単語・熟語だけの時は、explain・example・help のような依頼に見える語でも、その語句を entries で解説する（聞き返し・確認の文は書かない）。entries を空にして explanation に単語の解説を書かない。',
 '- items: 学習カード。解説した単語・熟語本体に加え、セットで示した同語根語・関連熟語も入試価値が高ければカード化する。',
 '- type: vocab(単語) / idiom(熟語・句動詞)',
 '- pos: 品詞。名詞/動詞/形容詞/副詞/前置詞/接続詞/その他 のいずれか（vocabのみ。idiomは空文字）。',
@@ -1974,11 +2049,19 @@ async function doAsk(){
         save();
       }catch(e2){toast('カード抽出に失敗（解説は表示済み）');track('ask_err','ask',null,{mode:mode,stage:'extract',msg:String(e2.message).slice(0,200)})}
     }else{
-      const content=await api([{role:'system',content:SYS_VOCAB},{role:'user',content:q}],{json:true,maxTokens:2000,temperature:0.3,feature:'ask_vocab'});
-      const v=VV.normalizeVocab(parseModelJSON(content));
+      /* 語句だけの入力は「依頼ではなく解説する語句」と添える。答えの形が違えば1回だけ聞き直す（v1.4: gpt-4o-mini の聞き返し・文章だけの答えの対策） */
+      const lexical=VV.looksLexical(q),sys=SYS_VOCAB+(lexical?'\n'+VV.lexicalNote(q):'');
+      const r=await VV.askChecked(function(extra){
+        if(extra)btn.textContent='もう一度聞いています…';
+        return api([{role:'system',content:sys+extra},{role:'user',content:q}],{json:true,maxTokens:2000,temperature:0.3,feature:'ask_vocab'});
+      },VV.judgeVocab(parseModelJSON,lexical),function(why){return VV.retryNote(why,q)});
+      if(r.retried)track('ask_retry','ask',null,{mode:'std',why:r.first,ok:!r.why});
+      if(r.why==='parse')throw r.err;
+      if(r.why==='empty')throw new Error('答えを作れませんでした。言い方を変えて、もう一度送ってください。');
+      const v=r.v;
       added=addItems(v.items,q); // 先にカード化する（自動でカードにした仲間を最初から「カード済み」と表示するため）
       $('askOut').hidden=false;
-      showVocab($('askExp'),v);
+      showVocab($('askExp'),v,r.why==='noentry');
       pushHist(q,VV.vocabText(v)||'（解説なし）','std',v);
       save();
     }
@@ -1999,14 +2082,24 @@ function vocabKnown(front){const f=String(front).toLowerCase();return S.items.so
 /* 英文解説（案1b＋折りたたみ）。①〜⑩と「構造:」の行を読み取れない時・コマンドの時は今の文章表示 */
 function deepView(text,q,withSrc){
   const d=VV.parseDeep(text,q);
-  return d.ok?VV.deepHtml(d,{open:S.settings.deepOpen||{},src:withSrc?q:''}):nl2html(text);
+  if(!d.ok)return nl2html(text);
+  /* 図の下に「文章で表示」。読み取りを誤っても AI の元の文章をいつでも見られる（選んだ状態は覚えない） */
+  return '<div class="dswapw"><div class="dfig">'+VV.deepHtml(d,{open:S.settings.deepOpen||{},src:withSrc?q:''})+'</div>'
+    +'<div class="dtxt" hidden>'+nl2html(text)+'</div><button type="button" class="dswap">文章で表示</button></div>';
+}
+function toggleDeepText(btn){
+  const w=btn.closest('.dswapw');if(!w)return;
+  const fig=w.querySelector('.dfig'),txt=w.querySelector('.dtxt'),toText=txt.hidden;
+  fig.hidden=toText;txt.hidden=!toText;
+  btn.textContent=toText?'図で表示':'文章で表示';
 }
 function showDeep(el,text,q){el.innerHTML=deepView(text,q,true);el._vocab=null}
-function showVocab(el,v){
+function showVocab(el,v,warn){
   const open=S.settings.vocabOpen||{};
   const h=v.entries.map(function(e,i){return VV.entryHtml(e,i,{open:open,known:vocabKnown})}).join('')
     +(v.explanation?'<div class="exp vexpl">'+nl2html(v.explanation)+'</div>':'');
-  el.innerHTML=h||'（解説なし）';
+  /* 聞き直しても区分が来なかった時は、返ってきた文章の下に注意を添える */
+  el.innerHTML=(h||'（解説なし）')+(warn?'<div class="vwarn">区分つきの解説を作れませんでした。もう一度送ると直ることがあります。</div>':'');
   el._vocab=v;
 }
 function toggleVocabSec(row){
@@ -2036,11 +2129,13 @@ function addRelated(btn){
 }
 document.addEventListener('click',function(ev){
   const t=ev.target;if(!t||!t.closest)return;
+  const sw=t.closest('button.dswap');if(sw){toggleDeepText(sw);return}
   const row=t.closest('.vrow');if(row){toggleVocabSec(row);return}
   const add=t.closest('button.vadd');if(add)addRelated(add);
 });
 /* カードの編集欄（質問画面の保存カードと記録タブのカード一覧で共通） */
 const POS_LIST=['名詞','動詞','形容詞','副詞','前置詞','接続詞','その他'];
+function tagBtnHtml(tg,on){return '<button type="button" class="tagc tgl ceTag'+(on?' on':'')+'" data-tag="'+esc(tg)+'">#'+esc(tg)+'</button>'}
 function cardEditorHtml(it){
   return '<div class="cedit">'
     +'<div class="edrow"><label>見出し語</label><input type="text" class="ceFront en" value="'+esc(it.front)+'" maxlength="80" autocapitalize="off" autocomplete="off" spellcheck="false"><div class="cehint">直しても、復習の箱と記録はそのまま</div></div>'
@@ -2048,6 +2143,9 @@ function cardEditorHtml(it){
     +'<div class="edrow cePosRow"'+(it.type==='vocab'?'':' hidden')+'><label>品詞</label><div class="chips cePos">'+POS_LIST.map(function(p){return '<button type="button" class="chip fchip'+(it.pos===p?' on':'')+'" data-pos="'+p+'">'+p+'</button>'}).join('')+'</div></div>'
     +'<div class="edrow"><label>意味</label><input type="text" class="ceBack" value="'+esc(it.back)+'" maxlength="120"></div>'
     +'<div class="edrow"><label>メモ（語源・成り立ちなど）</label><input type="text" class="ceNote" value="'+esc(it.note||'')+'" maxlength="80"></div>'
+    +'<div class="edrow"><label>タグ</label><div class="rtags ceTags">'+(S.tagDefs.length?S.tagDefs.map(function(tg){return tagBtnHtml(tg,(it.tags||[]).indexOf(tg)>=0)}).join(''):'<span class="hint ceNoTag">まだタグがありません</span>')+'</div>'
+    +'<div class="tagrow"><input type="text" class="ceTagNew" placeholder="新しいタグ（12文字まで）" maxlength="12" autocomplete="off"><button type="button" class="btn ghost ceTagAdd" style="flex:0 0 76px">作成</button></div>'
+    +'<div class="cehint">タップで付け外し（すぐ保存）</div></div>'
     +'<div class="err ceErr" hidden></div>'
     +'<div class="btnrow"><button type="button" class="btn danger ceDel" style="flex:0 0 96px">削除</button><button type="button" class="btn ceSave">保存</button></div>'
     +'</div>';
@@ -2090,6 +2188,25 @@ function bindCardEditor(ed,it,where,after){
     ed.querySelectorAll('.cePos button').forEach(function(x){x.classList.remove('on')});
     if(on)b.classList.add('on');
   })});
+  /* タグは押すたびに付け外しして、すぐ保存する（編集欄は描き直さない。打ちかけの文字を消さないため） */
+  function bindTag(b){b.addEventListener('click',function(){
+    const tg=b.dataset.tag;if(S.tagDefs.indexOf(tg)<0){b.remove();toast('このタグは削除されています');return}
+    it.tags=it.tags||[];
+    const k=it.tags.indexOf(tg);
+    if(k>=0)it.tags.splice(k,1);else it.tags.push(tg);
+    b.classList.toggle('on',k<0);
+    save();renderCardStatus();if(where==='records')renderTagDefs();
+  })}
+  ed.querySelectorAll('.ceTag').forEach(bindTag);
+  ed.querySelector('.ceTagAdd').addEventListener('click',function(){
+    const inp=ed.querySelector('.ceTagNew'),p=VV.tagNamePlan(inp.value,S.tagDefs);
+    if(!p.ok){toast(p.err);return}
+    S.tagDefs.push(p.name);it.tags=it.tags||[];if(it.tags.indexOf(p.name)<0)it.tags.push(p.name);
+    const box=ed.querySelector('.ceTags'),none=box.querySelector('.ceNoTag');if(none)none.remove();
+    box.insertAdjacentHTML('beforeend',tagBtnHtml(p.name,true));bindTag(box.lastElementChild);
+    inp.value='';save();renderCardStatus();if(where==='records')renderTagDefs();
+    toast('タグ「#'+p.name+'」を作って付けました');
+  });
   ed.querySelector('.ceSave').addEventListener('click',function(){if(saveCardEdit(it,ed,where))after(false)});
   ed.querySelector('.ceDel').addEventListener('click',async function(){
     if(!(await confirmBox('「'+it.front+'」のカードを削除します。よろしいですか？')))return;
@@ -2456,11 +2573,15 @@ async function doLookup(pending){
     for(let i=0;i<pending.length;i+=VV.LOOKUP_BATCH){
       const part=pending.slice(i,i+VV.LOOKUP_BATCH);
       const words=part.map(function(p){return {w:p.text,s:p.sentence}});
-      const content=await api([{role:'system',content:SYS_LOOKUP},{role:'user',content:JSON.stringify({title:String(data.title||''),words:words})}],{json:true,maxTokens:2000,temperature:0.3,feature:'lookup'});
+      /* 何も読み取れなければ1回だけ聞き直す（聞き直す前に別のテストへ移っていたら問い合わせない） */
+      const r=await VV.askChecked(function(extra){
+        if(extra&&quiz!==currentQuiz)return Promise.resolve('');
+        return api([{role:'system',content:SYS_LOOKUP+extra},{role:'user',content:JSON.stringify({title:String(data.title||''),words:words})}],{json:true,maxTokens:2000,temperature:0.3,feature:'lookup'});
+      },VV.judgeLookup(parseModelJSON,part,before,seen),function(why){return VV.retryNote(why,words.map(function(w){return w.w}).join(', '))});
       if(quiz!==currentQuiz)return; // 問い合わせ中に別のテストへ移った。結果は捨てる（カードも作らない）
-      const v=VV.normalizeVocab(parseModelJSON(content));
-      const plan=VV.planLookup(v,part,before,seen);
-      if(!plan.rows.length)throw new Error('結果を読み取れませんでした。もう一度試してください。');
+      if(r.retried)track('ask_retry','reading',null,{mode:'lookup',why:r.first,ok:!r.why});
+      if(r.why)throw new Error('結果を読み取れませんでした。もう一度試してください。');
+      const v=r.v.v,plan=r.v.plan;
       const res=applyLookup(plan);
       plan.looked.forEach(function(k){quiz.looked[k]=true});
       part.forEach(function(p){delete quiz.busy[p.text.toLowerCase()]});
@@ -3088,20 +3209,7 @@ function renderRec(){
     const open=!assignTag&&recOpenId===i.id;
     let ed='';
     if(open){
-      let tchips;
-      if(S.tagDefs.length){
-        tchips='<div class="rtags">'+S.tagDefs.map(function(tg){
-          const on=(i.tags||[]).indexOf(tg)>=0;
-          return '<button class="tagc tgl'+(on?' on':'')+'" data-tag="'+esc(tg)+'">#'+esc(tg)+'</button>';
-        }).join('')+'</div><div class="hint">タップでこのカードをタグに出し入れ。</div>';
-      }else{
-        tchips='<div class="hint">タグがまだありません。上の「タグ」欄で作成してください。</div>';
-      }
-      ed='<div class="redit">'
-        +cardEditorHtml(i)
-        +'<div class="tlbl" style="margin-top:12px">タグ</div>'
-        +tchips
-        +'</div>';
+      ed='<div class="redit">'+cardEditorHtml(i)+'</div>';
     }
     return '<div class="row'+(open?' open':'')+(inTag?' sel':'')+'" data-id="'+i.id+'">'+selm+'<span class="badge b-'+i.type+'">'+TYPES[i.type]+'</span>'
       +'<span class="rmain"><b>'+esc(i.front)+posb+'</b><small>'+esc(i.back)+'</small></span>'
@@ -3152,16 +3260,6 @@ function renderRec(){
       ed.addEventListener('click',function(e){e.stopPropagation()});
       const ced=ed.querySelector('.cedit');
       bindCardEditor(ced,it,'records',function(gone){if(gone)recOpenId=null;renderRec();renderCardStatus()});
-      ed.querySelectorAll('.tgl').forEach(function(tb){
-        tb.addEventListener('click',function(e){
-          e.stopPropagation();
-          const tg=tb.dataset.tag;
-          it.tags=it.tags||[];
-          const k=it.tags.indexOf(tg);
-          if(k>=0){it.tags.splice(k,1)}else{it.tags.push(tg)}
-          save();renderRec();renderCardStatus();
-        });
-      });
     }
   }
   const cost=S.usage.usd||0;
@@ -3169,12 +3267,9 @@ function renderRec(){
 }
 
 $('tagNewBtn').addEventListener('click',function(){
-  const v=($('tagNewIn').value||'').trim().replace(/^#/,'');
-  if(!v){toast('タグ名を入力してください');return}
-  if(v.length>12){toast('タグ名は12文字まで');return}
-  if(S.tagDefs.indexOf(v)>=0){toast('同じタグがあります');return}
-  if(S.tagDefs.length>=20){toast('タグは20個まで');return}
-  S.tagDefs.push(v);
+  const p=VV.tagNamePlan($('tagNewIn').value,S.tagDefs);
+  if(!p.ok){toast(p.err);return}
+  S.tagDefs.push(p.name);
   $('tagNewIn').value='';
   save();renderRec();
 });

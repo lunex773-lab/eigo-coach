@@ -196,7 +196,6 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 .tl .more{margin:4px 0 4px 54px}
 .qrow{display:flex;align-items:flex-start;gap:10px;width:100%;padding:0;margin-top:2px;border:0;background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
 .qrow .q{flex:1;min-width:0;margin-top:0}
-.qi .a{display:block;-webkit-line-clamp:unset;margin-top:6px;background:var(--fill);border-radius:10px;padding:9px 11px}
 
 /* フィードバック（本文が主役。日時・版・端末番号は1行の控えめなメタ情報に） */
 .fbl{display:flex;flex-direction:column}
@@ -215,8 +214,7 @@ tbody tr.sel td.sticky1{background:linear-gradient(var(--fill2),var(--fill2)),va
 .qi:last-child{border-bottom:0}
 .qi .m{font-size:12px;color:var(--muted)}
 .qi .q{font-weight:700;margin-top:2px;white-space:pre-wrap;word-break:break-word}
-.qi .a{margin-top:4px;color:var(--ink2);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
-.qi .a.open{display:block}
+.qi .a{margin-top:6px;color:var(--ink2);white-space:pre-wrap;word-break:break-word;background:var(--fill);border-radius:10px;padding:9px 11px}
 
 /* エラー */
 .errlist .e{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
@@ -379,7 +377,7 @@ const YEN = 155;
 const FEATURES = [['ask', '質問'], ['reading', '読解'], ['listen', 'リスニング'], ['cards', '単語'], ['records', '記録'], ['settings', '設定']];
 const FEATURE_LABEL = Object.fromEntries(FEATURES.concat([['other', 'その他']]));
 const AI_FEATURE = { ask_vocab: '単語の質問', ask_deep: '英文解説', extract: 'カード抽出', reading: '読解の作成', reading_hard: '難問の作成', listen: 'リスニングの作成', lookup: '読解で調べた語', conn_test: '接続テスト', other: 'その他' };
-const KIND = { open: '起動', fg: '前面で使用', dwell: '画面に滞在', tab: '画面を切替', ask: '質問', ask_err: '質問のエラー', gen: '問題を作成', gen_err: '作成のエラー',
+const KIND = { open: '起動', fg: '前面で使用', dwell: '画面に滞在', tab: '画面を切替', ask: '質問', ask_err: '質問のエラー', ask_retry: '聞き直し', gen: '問題を作成', gen_err: '作成のエラー',
   test: '採点', play: '音声を再生', card: 'カードに回答', card_set: 'カード1セット終了', card_edit: 'カードを編集', card_del: 'カードを削除', setting: '設定を変更',
   backup: 'バックアップ', share: 'シェア', feedback: 'フィードバック送信', reset: '全データを削除', onboard: '初回案内を完了', notice: '記録の告知を確認', js_err: 'アプリのエラー' };
 /* アプリ（index.html）の BUCKETS / LBUCKETS と同じ番号・名前 */
@@ -730,6 +728,12 @@ function daySummary(items) {
   }
   return [['質問', c.ask], ['読解', c.reading], ['リスニング', c.listen], ['カード', c.card]].filter((x) => x[1]).map((x) => x[0] + x[1]).join('・');
 }
+/* 聞き直し（アプリが答えの形を確かめて1回だけ聞き直した記録）の説明 */
+const RETRY_WHY = { noentry: '区分なし', empty: '空', parse: '読めない' };
+function retryLine(dd) {
+  dd = dd || {};
+  return [dd.mode === 'lookup' ? '読解の調べ' : '単語・熟語', RETRY_WHY[dd.why] || dd.why || '', dd.ok ? '直った' : '直らず'].filter(Boolean).join('・');
+}
 /* === admin-timeline:end === */
 
 /* 1人分の時系列 */
@@ -755,6 +759,7 @@ function describe(it) {
     case 'play': d = it.n + '回目'; break;
     case 'setting': d = (SETTING[dd.key] || dd.key || '') + '：' + (dd.on != null ? (dd.on ? 'オン' : 'オフ') : dd.v != null ? dd.v : it.n); break;
     case 'backup': d = dd.op === 'import' ? '復元' : '書き出し'; break;
+    case 'ask_retry': d = retryLine(dd); break;
     case 'ask_err': case 'gen_err': case 'js_err': d = dd.msg || ''; break;
     default: d = it.data ? String(it.data).slice(0, 120) : '';
   }
@@ -869,6 +874,11 @@ function entryLine(e) {
   const senses = Array.isArray(e.senses) ? e.senses.map((x) => x && x.mean).filter(Boolean) : [];
   return String(e.front) + (pos ? '（' + pos + '）' : '') + (e.ctx ? '［文中］' + e.ctx : '') + (senses.length ? '：' + senses.join('／') : '');
 }
+/* 検索語が回答の文章に含まれるか（含まれる件は回答を開いて出す。閉じたままだと、なぜ当たったか見えない） */
+function answerHit(text, search) {
+  const s = String(search || '').trim().toLowerCase();
+  return !!s && String(text || '').toLowerCase().includes(s);
+}
 /* === admin-answer:end === */
 /* フィードバック。並びと「新着」の判定は Worker が受け取った時刻（キー fb:<ミリ秒>）で行う。
    前回この画面で見た最新の時刻を端末に覚えておき、それより後に届いたものに「新着」を付ける */
@@ -914,8 +924,9 @@ async function loadQa(reset) {
   try {
     const r = await api({ view: 'qa', search: state.qa.search, offset: offset, owner: state.owner });
     for (const x of r.rows) {
-      const a = h('div', { class: 'a', hidden: true }, answerText(x));
-      const btn = h('button', { class: 'qrow', 'aria-expanded': 'false', onclick: (e) => {
+      const at = answerText(x), hit = answerHit(at, state.qa.search);
+      const a = h('div', { class: 'a', hidden: !hit }, at);
+      const btn = h('button', { class: 'qrow', 'aria-expanded': String(hit), onclick: (e) => {
         a.hidden = !a.hidden; e.currentTarget.setAttribute('aria-expanded', String(!a.hidden));
       } }, h('span', { class: 'q' }, x.q), h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'));
       $('qa').append(h('div', { class: 'qi' },
