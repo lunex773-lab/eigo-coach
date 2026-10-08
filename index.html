@@ -1182,10 +1182,34 @@ var VV = (function () {
       tips: str(e.tips, 160)
     };
   }
+  /* 同じ見出し語の entry は1つにまとめる（AI が品詞ごとに entry を分けて返すと、同じ語の解説が2つ並ぶため）。
+     読解の調べでタップした語（src）が違うものは、文ごとの意味を残すため分けたまま */
+  function uniq(list, key, max) {
+    var seen = {};
+    return list.filter(function (x) { var k = key(x); if (seen[k]) return false; seen[k] = true; return true; }).slice(0, max);
+  }
+  function lowFront(w) { return String(w.front).toLowerCase(); }
+  function mergeEntries(list) {
+    var out = [], at = {};
+    list.forEach(function (e) {
+      var k = e.front.toLowerCase() + '|' + e.src.toLowerCase();
+      if (!(k in at)) { at[k] = out.length; out.push(e); return; }
+      var m = out[at[k]];
+      e.pos.forEach(function (p) { if (m.pos.indexOf(p) < 0 && m.pos.length < 4) m.pos.push(p); });
+      ['ctx', 'hook', 'core', 'tips'].forEach(function (f) { if (!m[f]) m[f] = e[f]; });
+      if (!m.parts.length) m.parts = e.parts;
+      m.senses = uniq(m.senses.concat(e.senses), function (x) { return x.pos + '|' + x.sub + '|' + x.mean; }, LIM.senses);
+      m.synonyms = uniq(m.synonyms.concat(e.synonyms), lowFront, LIM.syn);
+      m.antonyms = uniq(m.antonyms.concat(e.antonyms), lowFront, LIM.ant);
+      m.family = uniq(m.family.concat(e.family), lowFront, LIM.fam);
+      m.examples = uniq(m.examples.concat(e.examples), function (x) { return x.en; }, LIM.ex);
+    });
+    return out;
+  }
   function normalizeVocab(obj) {
     obj = (obj && typeof obj === 'object') ? obj : {};
     return {
-      entries: arr(obj.entries).map(normEntry).filter(Boolean).slice(0, LIM.entries),
+      entries: mergeEntries(arr(obj.entries).map(normEntry).filter(Boolean)).slice(0, LIM.entries),
       explanation: String(obj.explanation == null ? '' : obj.explanation).trim().slice(0, 6000),
       items: arr(obj.items)
     };
@@ -1487,7 +1511,7 @@ var VV = (function () {
   function lexicalNote(q) { return '今回の入力' + quoteQ(q) + 'は解説する英語の語句そのもの。依頼や質問ではないので、聞き返さず entries で解説する。'; }
   /* 聞き直しの時にシステム指示の末尾へ足す行（理由ごと） */
   function retryNote(why, q) {
-    if (why === 'noentry') return '【聞き直し】前の出力は entries が空だった。' + quoteQ(q) + 'を entries に1件以上入れ、決められたJSONだけを出力する。';
+    if (why === 'noentry') return '【聞き直し】前の出力は entries が空だった。' + quoteQ(q) + 'を entries に入れ（語句ごとに1つ。同じ語を2つに分けない）、決められたJSONだけを出力する。';
     if (why === 'parse') return '【聞き直し】前の出力は決められたJSONとして読めなかった。' + quoteQ(q) + 'について、決められたJSONだけを出力する（前後の文章・コードフェンス禁止）。';
     return '【聞き直し】前の出力は空だった。' + quoteQ(q) + 'について、決められたJSONの形で必ず答える。';
   }
@@ -1927,6 +1951,7 @@ const SYS_VOCAB=[
 '出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
 '{"entries":[{"front":"見出し語","type":"vocab","pos":["動詞"],"parts":[{"p":"per-","m":"完全に"}],"hook":"","core":"コアイメージから意味への流れを1行で","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":"語法・相性の良い前置詞（英語＋訳）"}],"synonyms":[{"front":"...","pos":"動詞","back":"訳","diff":"使い分け"}],"antonyms":[{"front":"...","pos":"動詞","back":"訳","diff":""}],"family":[{"front":"...","pos":"名詞","back":"訳","note":"成り立ち"}],"examples":[{"en":"...","ja":"..."}],"tips":""}],"explanation":"","items":[{"type":"vocab","pos":"動詞","front":"...","back":"...","note":"..."}]}',
 '- entries: 解説した単語・熟語ごとに1つ。type は vocab(単語) / idiom(熟語・句動詞)。parts は接頭辞・語根・接尾辞（0〜4個）。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
+'- 同じ見出し語を2つの entry に分けない（品詞が複数ある語も1つの entry にまとめ、品詞ごとの意味は senses に書く）。',
 '- senses: 品詞ごと・意味ごとに分ける。sub は動詞なら「自動詞」「他動詞」、名詞なら「可算」「不可算」、それ以外は空文字。熟語は pos を「熟語」にし、目的語の取り方を usage に書く。重要語は**で囲んでよい。',
 '- synonyms 2〜3個、antonyms 0〜2個（無ければ[]）、family は上の原則の数（単語は同じ語根の語2〜4個と重要な派生語、熟語は関連熟語・言い換え2〜3個）、examples 1〜2個、tips はアクセント位置など注意があれば（無ければ空文字）。',
 '- synonyms・antonyms・family の pos はその語の品詞（名詞/動詞/形容詞/副詞/前置詞/接続詞/その他。熟語・句動詞は空文字）。',
@@ -2316,6 +2341,7 @@ const SYS_LOOKUP=[
 '出力: 必ず次のJSONのみを出力（前後の文章・コードフェンス禁止）:',
 '{"entries":[{"src":"タップした語句そのまま","front":"原形（動詞の活用形・名詞の複数形は原形に）","type":"vocab","pos":["動詞"],"ctx":"この文での意味（日本語で簡潔に）","parts":[{"p":"post-","m":"後に"}],"hook":"","core":"コアイメージ（1行）","senses":[{"pos":"動詞","sub":"他動詞","mean":"意味","usage":""}],"synonyms":[{"front":"...","back":"訳","diff":""}],"antonyms":[],"family":[],"examples":[{"en":"...","ja":"..."}],"tips":""}],"items":[{"type":"vocab","pos":"動詞","front":"原形","back":"日本語の意味を簡潔に","note":"30字以内の語源分解（不要なら空文字）"}]}',
 '- entries は words の順に。src は words の w をそのまま入れる。',
+'- 1つの語句に entry は1つ（品詞ごとに分けない。品詞ごとの意味は senses に書く）。',
 '- 隣り合う複数語（例: in advance）は、熟語・句動詞・決まった言い方ならその語句全体を1つの entry（type は idiom、pos は []）にする。熟語でなければ語ごとに別の entry に分け、それぞれの src にはその語だけを入れる。',
 '- ctx は、その文で使われている意味。辞書の意味をそのまま並べない。',
 '- 短く: senses は文中の意味を含めて2つまで、synonyms 2つまで、antonyms 1つまで、family は空でよい、examples 1つ。分解が記憶の助けにならない語は parts を [] にして hook に記憶のフックを書く。',
